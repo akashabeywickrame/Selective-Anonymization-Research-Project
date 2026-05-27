@@ -1,0 +1,19 @@
+# AnonymizationAR — Phase 1 dependencies
+# Install with: pip install -r requirements.txt
+
+# Core vision
+opencv-python>=4.9.0
+numpy>=1.26.0
+
+# Detection — YOLOv8n-face
+ultralytics>=8.2.0
+
+# Tracking — ByteTrack (via boxmot which bundles multiple trackers)
+boxmot>=10.0.0
+
+# GPU inference (comment out if using CPU / Raspberry Pi)
+# onnxruntime-gpu>=1.18.0      # uncomment for ONNX export on GPU
+# onnxruntime>=1.18.0          # uncomment for ONNX on CPU (RPi5)
+
+# Utilities
+tqdm>=4.66.0
