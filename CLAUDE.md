@@ -75,19 +75,18 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 - The annotation package and zip (`eval/annotation_package.zip`) are generated.
 
 ### Remaining (in order)
-1. **Human annotation (IN PROGRESS).**
-   - `eval/annotation_package/annotations_researcher.csv` exists: 29 labels, 6 partners and 23 bystanders. On 2026-10-17 these labels were found typed into the template and moved to this file. Not yet confirmed whether they are the owner's or another evaluator's; ask before using them.
-   - `annotator_template.csv` was reset to blank so it can be sent to more evaluators.
-   - Each returned file goes in `eval/annotation_package/` as `annotations_<name>.csv` (CSV, not .xlsx).
-   - Test run on the single file: TP=2, TN=21, FP=2, FN=4 → PSR 91.3%, IPR 33.3%, Precision 50.0%, F1 40.0%. **Provisional**: one annotator, only 6 partner faces. Not yet in the dissertation.
-   - Do NOT use `eval/annotation_package/form_build/` (Google Form, 65 frames, 2026-10-07). It is an older frame set whose IDs don't match `frame_track_map.csv`.
-   - `aggregate_annotations.py` was fixed on 2026-10-17 to read Excel "CSV UTF-8" files (BOM) and to print on a Windows console.
-2. Once 2 or more evaluator files are in, run:
-   ```bash
-   python eval/aggregate_annotations.py eval/annotation_package/annotations_*.csv
-   # with 2+ annotators add: --min-annotators 2
-   ```
-   Then read `logs/human_annotation_metrics.csv`.
+1. **Human annotation: DONE (2026-10-18).** Four annotators: `annotations_akash.csv`, `annotations_gayantha.csv`, `annotations_udari.csv` (2 blanks), `annotations_vinuka.csv`.
+   - `annotations_researcher.csv` is a **blank** copy of the template. Exclude it; don't use `annotations_*.csv` as the glob.
+   - Command used:
+     ```bash
+     python eval/aggregate_annotations.py eval/annotation_package/annotations_{akash,gayantha,udari,vinuka}.csv --min-annotators 2
+     ```
+   - Majority vote (a 2-2 tie counts as bystander; only frame_001 face 3 tied) → 29 faces/tracks, **7 partners, 22 bystanders**.
+   - **Phase 2b results:** TP=4, TN=22, FP=0, FN=3 → **PSR 100.00%, IPR 57.14%, Precision 100.00%, Recall 57.14%, F1 72.73%** (`logs/human_annotation_metrics.csv`).
+   - Pairwise Cohen's κ: 0.307–0.724, mean ≈ 0.59 (moderate); 5 of 6 pairs moderate or better, akash–vinuka only fair (0.307). See `eval/annotation_package/agreement_report.csv`.
+   - Caveat for the write-up: a small sample (only 7 partners, so each FN costs about 14 IPR points). It is not directly comparable to Phase 2a's 66-track evaluation.
+   - Do NOT use `eval/annotation_package/form_build/` (an older 65-frame Google Form set; its IDs don't match `frame_track_map.csv`).
+2. (merged into step 1)
 3. **Fill the Phase 2b placeholders (`\_`, `\_\_`) in `chapters_4_5_6.tex`:**
    - the confusion matrix `tab:confusion_2b` (about lines 139–141)
    - the metrics table `tab:metrics_2b` (about lines 160–164)
