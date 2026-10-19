@@ -72,6 +72,8 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 - All 23 videos processed. Outputs and the full tracking log exist.
 - **Phase 2a results are in the dissertation:** 66 tracks (26 partners, 40 bystanders), TP=22, TN=35, FP=5, FN=4 → PSR 87.50%, IPR 84.62%, Precision 81.48%, F1 83.02%.
 - **FPS table is in the dissertation:** 86 ms/frame, 11.62 FPS on the laptop CPU, about 3.3 FPS projected on a Raspberry Pi 5. Do **not** replace it with the later 5.07 FPS / 197 ms run in `logs/fps_benchmark.csv`, because that run was thermally throttled.
+- **Phase 2b speed measured (2026-10-19):** `python eval/evaluate.py --fps --phase 2b` now runs MediaPipe and times it separately (before this, the benchmark never ran it). MediaPipe = **33.5 ms per face** (~1 face/frame on interaction/video1) → Phase 2b ≈ 86 + 33 ≈ 119 ms ≈ **8.4 FPS** on the laptop, ≈ **2.4 FPS** projected on the Pi 5 (×3.5). These numbers are already in `chapters_4_5_6.tex`: the FPS section, the discussion, the limitations and the conclusion. The benchmark ran on battery, so YOLO time drifted 66→108 ms between runs, which is why the 2b total is baseline + measured landmark cost. Output: `logs/fps_benchmark_phase2a.csv`, `logs/fps_benchmark_phase2b.csv`. For cleaner absolute numbers, rerun 2a and 2b plugged in, on a cool and idle laptop.
+- `Intro & Lit & Methodology.txt` contains an OLD copy of the results text (still says 15–25 ms/face and "real time on desktop"). `chapters_4_5_6.tex` is the current version.
 - The annotation package and zip (`eval/annotation_package.zip`) are generated.
 
 ### Remaining (in order)
