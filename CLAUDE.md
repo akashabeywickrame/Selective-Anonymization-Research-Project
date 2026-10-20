@@ -34,7 +34,7 @@ YOLOv8n-face (core/detector.py)
 | `main.py` | Runs the pipeline over all videos in `data/` (resumable; skips a video if its `*_selective.mp4` already exists). Flags: `--category`, `--video` |
 | `config.py` | All thresholds and paths |
 | `core/` | detector, tracker, classifier, interaction_cues, landmark_extractor, anonymizer, visualizer |
-| `data/bystander/` (video1–7), `data/interaction/` (video1–16) | 23 input clips. video15/16 were added late and are **not** in the formal evaluation (21 clips) |
+| `data/bystander/` (video1–7), `data/interaction/` (video1–16) | 23 input clips, all collected from YouTube/web (none recorded by the owner). video15/16 were added late and are **not** in the formal evaluation (21 clips) |
 | `output/` | Selective, blanket, and debug videos |
 | `logs/tracking_log.csv` | Per-frame, per-face log (~224k rows): video, category, frame, face_id, bbox, confidence, interacting |
 | `eval/evaluate.py` | `--accuracy` (vs ground_truth CSVs) and `--fps --frames 300` benchmark |
@@ -94,9 +94,7 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
    - Wilson 95% CIs: 2b PSR 85.1-100, 2b IPR 25.0-84.2; 2a PSR 73.9-94.5, 2a IPR 66.5-93.9.
    - Pre-edit backup: the session scratchpad (`chapters_4_5_6.before_2b.tex`); otherwise use git once committed.
 4. **Dataset table: DONE.** It shows only what is known: partners 26 (interaction) / 0 (bystander), total bystanders 40, with a footnote saying the per-category bystander split wasn't retained. No estimated numbers.
-   - **Open questions for the owner (not yet changed):**
-     (a) The Phase 2a failure-mode paragraph, cause (ii), says the "Phase 2b yaw veto" caused Phase 2a false negatives. That's impossible, because Phase 2a doesn't use landmarks.
-     (b) The dataset section says the clips were all recorded on a smartphone, indoors, at the university, but the annotation frames show a shop counter (interaction/video1) and a living room (interaction/video10).
+   - **Resolved (2026-10-20):** the contradictory Phase 2a FN cause (ii) was removed. The dataset text was rewritten: the owner **did not record any footage**; all clips were **collected from YouTube and other web sources**. Bystander clips are outdoor street/market walking footage (5.9-78.1 s). Interaction clips are 5-minute (300 s) indoor segments, mostly card/board games at a table plus shopping in small stores. Source resolution ranges from 1280x720 to 3840x2160; everything is resized to 1280x720. The dataset table now has no unknown cells (clips 14/7/21; tracks 26/40/66). The owner doesn't want "--" or footnote symbols in tables; put notes in captions instead.
 5. Optional: commit the work. Many files are still untracked (see `git status`). Don't commit LaTeX build files (`*.aux`, `*.log`, `*.nav`, `*.out`, `*.snm`, `*.toc`) or large zips/videos.
 
 ## Rules for working on this project
