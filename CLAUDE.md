@@ -89,12 +89,14 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
    - Caveat for the write-up: a small sample (only 7 partners, so each FN costs about 14 IPR points). It is not directly comparable to Phase 2a's 66-track evaluation.
    - Do NOT use `eval/annotation_package/form_build/` (an older 65-frame Google Form set; its IDs don't match `frame_track_map.csv`).
 2. (merged into step 1)
-3. **Fill the Phase 2b placeholders (`\_`, `\_\_`) in `chapters_4_5_6.tex`:**
-   - the confusion matrix `tab:confusion_2b` (about lines 139–141)
-   - the metrics table `tab:metrics_2b` (about lines 160–164)
-   - the baseline comparison `tab:vs_baseline`, Phase 2b row (about line 195)
-   - The Phase 2b section text says it re-evaluates on "the same 66 ground-truth tracks". That is no longer true, because evaluation now uses the human-annotated sample of 29 faces in 10 frames. Rewrite that text to describe the real protocol (blind annotation, sample size, κ if available) and state the small sample as a limitation.
-4. **Dataset table `tab:dataset` (about lines 51–52):** the per-category counts are `--`. The original 66-track manual GT was never committed and is lost. Either estimate the counts (Interaction: 14 clips / about 45 tracks / 26 partners / about 19 bystanders; Bystander: 7 clips / about 21 tracks / 0 partners / about 21 bystanders), say so explicitly, or collapse the table to totals only.
+3. **Phase 2b write-up: DONE (2026-10-20)** in `chapters_4_5_6.tex`. Includes: the evaluation protocol (why the 66-track GT couldn't be reused, blind 4-annotator study, κ), a sample table (`tab:sample_2b`), the confusion matrix, the metrics table, the baseline row, per-category results, 95% Wilson CIs, the discussion, a Phase 2b failure analysis, limitations, conclusion and future work. Framing: privacy-first (PSR 100%, IPR 57%); results are indicative because the sample is small and the evaluation sets differ.
+   - Verified facts used: all 3 FNs have area_ratio 0.36-0.72% < τ_area 1.2% (geometry gate, NOT the landmark veto). Two FNs are one person with duplicate overlapping tracks (frame_003 = interaction/video10). The third FN is frame_002 = interaction/video1, at the frame edge, yaw ≈ 25°. MediaPipe returned landmarks for only 50.8% of 224,519 logged detections.
+   - Wilson 95% CIs: 2b PSR 85.1-100, 2b IPR 25.0-84.2; 2a PSR 73.9-94.5, 2a IPR 66.5-93.9.
+   - Pre-edit backup: the session scratchpad (`chapters_4_5_6.before_2b.tex`); otherwise use git once committed.
+4. **Dataset table: DONE.** It shows only what is known: partners 26 (interaction) / 0 (bystander), total bystanders 40, with a footnote saying the per-category bystander split wasn't retained. No estimated numbers.
+   - **Open questions for the owner (not yet changed):**
+     (a) The Phase 2a failure-mode paragraph, cause (ii), says the "Phase 2b yaw veto" caused Phase 2a false negatives. That's impossible, because Phase 2a doesn't use landmarks.
+     (b) The dataset section says the clips were all recorded on a smartphone, indoors, at the university, but the annotation frames show a shop counter (interaction/video1) and a living room (interaction/video10).
 5. Optional: commit the work. Many files are still untracked (see `git status`). Don't commit LaTeX build files (`*.aux`, `*.log`, `*.nav`, `*.out`, `*.snm`, `*.toc`) or large zips/videos.
 
 ## Rules for working on this project
