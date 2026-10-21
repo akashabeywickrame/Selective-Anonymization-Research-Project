@@ -95,7 +95,15 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
    - Pre-edit backup: the session scratchpad (`chapters_4_5_6.before_2b.tex`); otherwise use git once committed.
 4. **Dataset table: DONE.** It shows only what is known: partners 26 (interaction) / 0 (bystander), total bystanders 40, with a footnote saying the per-category bystander split wasn't retained. No estimated numbers.
    - **Resolved (2026-10-20):** the contradictory Phase 2a FN cause (ii) was removed. The dataset text was rewritten: the owner **did not record any footage**; all clips were **collected from YouTube and other web sources**. Bystander clips are outdoor street/market walking footage (5.9-78.1 s). Interaction clips are 5-minute (300 s) indoor segments, mostly card/board games at a table plus shopping in small stores. Source resolution ranges from 1280x720 to 3840x2160; everything is resized to 1280x720. The dataset table now has no unknown cells (clips 14/7/21; tracks 26/40/66). The owner doesn't want "--" or footnote symbols in tables; put notes in captions instead.
-5. Optional: commit the work. Many files are still untracked (see `git status`). Don't commit LaTeX build files (`*.aux`, `*.log`, `*.nav`, `*.out`, `*.snm`, `*.toc`) or large zips/videos.
+5. **Second, larger blind evaluation: video clips (package built 2026-10-21, WAITING for annotators).**
+   - Why: the first study used 10 still frames (29 faces, only 7 partners, IPR CI 25-84%). Stills make it hard to judge who is talking.
+   - `python eval/generate_clip_package.py` builds `eval/clip_package/`: 104 clips (83 interaction, 21 bystander), 7 s each = a 1 s intro still + 6 s of the ORIGINAL video with SOUND, and a yellow box on one face. Annotators open `annotate.html` (P/B/U buttons; it downloads `annotations_NAME.csv`). Share `eval/clip_package.zip` (67 MB, excludes the map).
+   - Sampling (never looks at system output): per interaction clip, the 4 longest eligible tracks plus 2 random ones; per bystander clip, the 4 longest. Eligible = ≥60 logged frames and median face side ≥32 px. Seed 2026.
+   - `clip_map.csv` is PRIVATE. System prediction per clip = face unblurred in ≥50% of the target's logged frames in the window. Spread: interaction 40 unblurred / 43 blurred; bystander 1 / 20.
+   - When files come back, save them as `eval/clip_package/annotations_<name>.csv`, then run `python eval/aggregate_clip_annotations.py eval/clip_package/annotations_*.csv` → majority vote, Cohen's + Fleiss' κ, PSR/IPR/F1 with Wilson CIs, per category → `logs/clip_annotation_metrics.csv`.
+   - NOT yet in the dissertation. The owner's chapters are frozen except `chapters_4_5_6.tex`; add the results there as a second, larger evaluation once real labels exist.
+   - Never show annotators the system output (that would bias the labels).
+6. Optional: commit the work. Many files are still untracked (see `git status`). Don't commit LaTeX build files (`*.aux`, `*.log`, `*.nav`, `*.out`, `*.snm`, `*.toc`) or large zips/videos.
 
 ## Rules for working on this project
 
