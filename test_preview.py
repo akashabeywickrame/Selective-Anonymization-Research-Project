@@ -8,7 +8,7 @@ from pathlib import Path
 from ultralytics import YOLO
 
 # ── EDIT THIS ─────────────────────────────────────────────────────────────────
-VIDEO_PATH  = r"F:\ResearchProject\data\bystander\video1.mp4"
+VIDEO_PATH  = r"F:\ResearchProject\data\interaction\video2.mp4"
 MODEL_PATH  = r"F:\ResearchProject\models\yolov8n-face.pt"
 # ─────────────────────────────────────────────────────────────────────────────
 

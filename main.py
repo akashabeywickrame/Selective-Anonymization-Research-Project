@@ -21,12 +21,14 @@ from config import (
     BYSTANDER_OUTPUT_DIR, INTERACTION_OUTPUT_DIR,
     LOGS_DIR, DEBUG_MODE, FOURCC, TARGET_FPS
 )
-from core.detector   import FaceDetector
-from core.tracker    import FaceTracker
-from core.classifier import InteractionClassifier
-from core.anonymizer import SelectiveAnonymizer, BlanketAnonymizer
-from core.visualizer import Visualizer
-from utils.video_loader import VideoLoader
+from core.detector            import FaceDetector
+from core.tracker             import FaceTracker
+from core.classifier          import InteractionClassifier
+from core.anonymizer          import SelectiveAnonymizer, BlanketAnonymizer
+from core.visualizer          import Visualizer
+from core.landmark_extractor  import LandmarkExtractor
+from utils.video_loader       import VideoLoader
+from config                   import LANDMARK_ENABLED
 
 
 # =============================================================================
@@ -55,16 +57,19 @@ class TrackingLogger:
         area_ratio, center_dist, interacting
     """
 
-    def __init__(self, log_path: Path):
+    def __init__(self, log_path: Path, append: bool = False):
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        self._file   = open(log_path, "w", newline="")
+        file_exists = append and log_path.exists() and log_path.stat().st_size > 0
+        self._file   = open(log_path, "a" if file_exists else "w", newline="")
         self._writer = csv.writer(self._file)
-        self._writer.writerow([
-            "video", "category", "frame",
-            "face_id", "x1", "y1", "x2", "y2", "confidence",
-            "area_ratio", "center_dist", "interacting",
-        ])
-        print(f"[Logger] Writing to {log_path}")
+        if not file_exists:
+            self._writer.writerow([
+                "video", "category", "frame",
+                "face_id", "x1", "y1", "x2", "y2", "confidence",
+                "area_ratio", "center_dist", "yaw", "mar", "interacting",
+            ])
+        mode = "APPENDING" if file_exists else "Writing"
+        print(f"[Logger] {mode} to {log_path}")
 
     def log(self, video_name: str, category: str, frame_idx: int, tracks: list):
         for t in tracks:
@@ -74,6 +79,7 @@ class TrackingLogger:
                 video_name, category, frame_idx,
                 t["track_id"], x1, y1, x2, y2, t["confidence"],
                 cues.get("area_ratio", ""), cues.get("center_dist", ""),
+                cues.get("yaw", ""), cues.get("mar", ""),
                 int(t.get("interacting", False)),
             ])
 
@@ -123,6 +129,7 @@ def process_video(
     detector   : FaceDetector,
     visualizer : Visualizer,
     logger     : TrackingLogger,
+    extractor  : "LandmarkExtractor | None" = None,
 ):
     print(f"\n{'='*60}")
     print(f"[Pipeline] Processing : {video_path.name}  [{category}]")
@@ -169,7 +176,7 @@ def process_video(
             tracks = tracker.update(detections, frame)
 
             # 3. Classify → interacting partner vs. bystander (the contribution)
-            decided = classifier.classify(tracks)
+            decided = classifier.classify(tracks, frame=frame, extractor=extractor)
 
             # 4. Log per-face decision + cues
             logger.log(video_path.name, category, frame_idx, decided)
@@ -261,6 +268,11 @@ def main():
     # ── shared instances (loaded once, reused across all videos) ───────────────
     detector   = FaceDetector()
     visualizer = Visualizer()
+    extractor  = LandmarkExtractor() if LANDMARK_ENABLED else None
+    if extractor:
+        print("[Pipeline] Landmark extraction: ENABLED (head-pose yaw + V-VAD MAR)")
+    else:
+        print("[Pipeline] Landmark extraction: DISABLED (Phase 2a cues only)")
 
     # ── build video list ───────────────────────────────────────────────────────
     if args.video:
@@ -283,11 +295,48 @@ def main():
         print("[Pipeline] No videos found. Place .mp4 files in data/bystander/ or data/interaction/")
         return
 
+    # ── skip videos already in the log (resume support) ───────────────────────
+    # A video is considered done if either:
+    #   (a) its selective output file already exists (fastest / catches sparse
+    #       videos where faces disappear before the last frame), or
+    #   (b) its last logged frame is >= 98% of the actual frame count.
+    # Partial runs (session killed mid-video) are re-queued.
+    log_path = LOGS_DIR / "tracking_log.csv"
+    already_done: set = set()
+    if log_path.exists():
+        from collections import defaultdict as _dd
+        _max_frame: dict = _dd(int)
+        with open(log_path, newline="") as _f:
+            for _row in csv.DictReader(_f):
+                _k = (_row["video"], _row["category"])
+                _fi = int(_row["frame"])
+                if _fi > _max_frame[_k]:
+                    _max_frame[_k] = _fi
+        for (vp, od, cat) in jobs:
+            _k = (vp.name, cat)
+            # Check (a): output file exists → video completed in a previous run
+            _selective_out = od / f"{vp.stem}_selective.mp4"
+            if _selective_out.exists():
+                already_done.add(_k)
+                continue
+            # Check (b): logged frames cover >= 98% of the video length
+            import cv2 as _cv2
+            _cap = _cv2.VideoCapture(str(vp))
+            _total = int(_cap.get(_cv2.CAP_PROP_FRAME_COUNT))
+            _cap.release()
+            if _total > 0 and _max_frame.get(_k, 0) >= _total * 0.98:
+                already_done.add(_k)
+    if already_done and not args.video:
+        before = len(jobs)
+        jobs = [(vp, od, cat) for vp, od, cat in jobs
+                if (vp.name, cat) not in already_done]
+        print(f"[Pipeline] Resuming — skipping {before - len(jobs)} already-processed video(s)")
+
     print(f"[Pipeline] Found {len(jobs)} video(s) to process")
 
     # ── single shared CSV log for entire run ───────────────────────────────────
-    log_path = LOGS_DIR / "tracking_log.csv"
-    logger   = TrackingLogger(log_path)
+    log_exists = log_path.exists() and log_path.stat().st_size > 0
+    logger = TrackingLogger(log_path, append=log_exists)
 
     # ── process each video ─────────────────────────────────────────────────────
     pipeline_start = time.perf_counter()
@@ -297,12 +346,14 @@ def main():
         try:
             process_video(
                 video_path, output_dir, category,
-                detector, visualizer, logger
+                detector, visualizer, logger, extractor
             )
         except Exception as e:
             print(f"[Pipeline] ERROR on {video_path.name}: {e}")
 
     logger.close()
+    if extractor:
+        extractor.close()
 
     total_elapsed = time.perf_counter() - pipeline_start
     print(f"\n[Pipeline] All done in {total_elapsed:.1f}s")

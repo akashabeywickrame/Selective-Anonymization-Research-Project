@@ -42,3 +42,22 @@ Thumbs.db
 # Annotation clip package (large media; regenerate with eval/generate_clip_package.py)
 eval/clip_package/clips/
 eval/clip_package.zip
+
+# LaTeX build files
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+
+# Images/video of real people's faces (the repo is public; keep these local)
+eval/annotation_package/frames/
+eval/annotation_package/form_build/frames_small/
+eval/annotation_package.zip
+eval/track_samples/
+*.pdf
+
+# Local Claude Code settings
+.claude/settings.local.json
+.claude/

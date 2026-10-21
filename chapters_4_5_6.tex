@@ -1,0 +1,1023 @@
+% ==============================================================================
+%  CHAPTER 4 — RESULTS
+% ==============================================================================
+\section{Results}
+\label{sec:results}
+
+This chapter presents the empirical evaluation of the proposed context-aware
+privacy framework. Section~4.1 describes the evaluation dataset and ground-truth
+annotation protocol. Section~4.2 reports classification performance for the
+geometry-only (Phase~2a) configuration. Section~4.3 extends this to the full
+system that additionally incorporates facial landmark cues (Phase~2b), evaluated
+first on still frames. Section~4.4 reports a second, larger evaluation of Phase~2b
+using short video clips with sound. Section~4.5 reports an offline second pass for
+recorded video that preserves confirmed partners and their group for their whole
+time on screen. Section~4.6 compares all configurations against the
+blanket-blurring baseline. Section~4.7 reports computational performance on the
+evaluation hardware and provides a projected estimate for the Raspberry~Pi~5
+deployment target.
+
+\subsection{Dataset and Ground-Truth Annotation}
+\label{sec:dataset}
+
+The evaluation dataset comprises 21 egocentric video clips that I collected from
+publicly available online sources, including YouTube; I did not record any of the
+footage myself. All clips are filmed from a first-person viewpoint, with the camera worn
+or held at approximately eye level. The clips are divided into two categories:
+14 \emph{interaction} clips, in which the camera wearer conducts a face-to-face
+conversation with at least one person, and 7 \emph{bystander} clips, in which no
+direct interaction takes place and all visible faces belong to people who are
+present but not conversing with the wearer.
+
+The two categories differ in setting. The bystander clips show the wearer walking
+through busy outdoor public spaces, such as street markets and city streets, by day
+and at night, and range from approximately 6 to 78 seconds in length. The
+interaction clips are five-minute segments filmed indoors, mostly showing the wearer
+playing card or board games with others around a table, with the remainder showing
+the wearer shopping in small stores. Source resolutions range from
+$1280 \times 720$ to $3840 \times 2160$; all frames were resized to
+$1280 \times 720$ for processing. For the Phase~2a evaluation, I manually
+labelled 66 face tracks across the 21 clips.
+
+I established the ground-truth labels by watching each clip in full. A track was assigned the label \emph{interaction partner} (1) if the
+corresponding person engaged in face-to-face conversation with the camera wearer at
+any point during the clip, and \emph{bystander} (0) otherwise. This per-track
+binary protocol is consistent with the interaction latching behaviour of the classifier,
+which permanently commits a track to the \emph{Interactor} state once the
+interaction criteria are met.
+
+Across all 66 tracks, 26 were labelled as interaction partners and 40 as bystanders
+(Table~\ref{tab:dataset}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Evaluation dataset composition and ground-truth track distribution.}
+\label{tab:dataset}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Video clips} & \textbf{Count} \\
+\midrule
+Interaction clips (5-minute indoor segments) & 14 \\
+Bystander clips (6-78~s outdoor walking)    & 7  \\
+\textbf{Total clips}                         & \textbf{21} \\
+\midrule
+\textbf{Labelled face tracks} & \textbf{Count} \\
+\midrule
+Interaction partner tracks & 26 \\
+Bystander tracks           & 40 \\
+\textbf{Total tracks}      & \textbf{66} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\subsection{Classification Performance: Phase 2a (Geometry-Only)}
+\label{sec:results_2a}
+
+The Phase~2a configuration uses only the two bounding-box geometry cues
+(area ratio and center distance) together with temporal hysteresis and latching.
+No facial landmark extraction is performed. I evaluated the system against the
+66 ground-truth tracks.
+
+Table~\ref{tab:confusion_2a} presents the confusion matrix.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Confusion matrix for the Phase~2a (geometry-only) configuration. Rows give
+the actual (human-labelled) class of each face track and columns give the system's
+decision.}
+\label{tab:confusion_2a}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Predicted Partner} & \textbf{Predicted Bystander} & \textbf{Total} \\
+\midrule
+\textbf{Actual partner}   & 22 (TP) & 4 (FN) & 26 \\
+\textbf{Actual bystander} & 5 (FP)  & 35 (TN) & 40 \\
+\textbf{Total}        & 27      & 39      & 66 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The five false positives represent bystanders that the geometry rule incorrectly
+classified as partners (privacy leaks), and the four false negatives represent
+interaction partners that were incorrectly blurred (utility losses).
+Table~\ref{tab:metrics_2a} summarises all derived metrics.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification metrics for the Phase~2a (geometry-only) configuration.}
+\label{tab:metrics_2a}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} & \textbf{Definition} \\
+\midrule
+Privacy Success Rate (PSR)          & 87.50\% & TN / (TN + FP) \\
+Interaction Preservation Rate (IPR) & 84.62\% & TP / (TP + FN) \\
+Precision                           & 81.48\% & TP / (TP + FP) \\
+Recall                              & 84.62\% & TP / (TP + FN) \\
+F$_1$ Score                         & 83.02\% & Harmonic mean of Precision and Recall \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The Phase~2a system correctly blurred 35 of 40 bystander tracks (PSR = 87.50\%) and
+correctly preserved 22 of 26 partner tracks (IPR = 84.62\%). The F$_1$ score of
+83.02\% reflects a reasonably balanced trade-off between privacy protection and
+interaction preservation.
+
+\subsection{Classification Performance: Phase 2b (Full System with Landmark Cues)}
+\label{sec:results_2b}
+
+The Phase~2b configuration extends Phase~2a by adding the two facial landmark
+cues derived from MediaPipe Face Landmarker: head-pose yaw (orientation veto) and
+Mouth Aspect Ratio (V-VAD boost). I ran the complete Phase~2b pipeline on all
+evaluation clips with the threshold values listed in Table~\ref{tab:params}.
+
+\paragraph{Evaluation protocol.}
+The 66-track ground truth of Section~4.2 could not be reused directly for Phase~2b.
+SORT assigns track identifiers sequentially within each clip, so a single additional
+or missing detection early in a clip shifts every subsequent identifier. This
+occurred between the Phase~2a and Phase~2b processing runs, and the stored per-track
+labels no longer referred to the same individuals. I therefore evaluated Phase~2b
+through a blind, multi-annotator manual annotation study.
+
+Ten evaluation frames were drawn automatically, one from each of the first five
+bystander clips and the first five interaction clips. Within each clip, the frame
+with the most clearly visible faces was selected (bounding box of at least
+50~pixels per side and detection confidence of at least 0.50, excluding the first
+30 frames while the tracker initialises). Each face in the selected frames was
+marked with a plain numbered badge, with no colour or label indicating the system's
+decision. Four annotators (myself and three independent annotators)
+labelled every face as \emph{interaction partner} or \emph{bystander}, or left it
+blank if undecidable; 114 of the 116 possible labels were provided. The final label
+of each face was obtained by majority vote, with ties resolved as \emph{bystander}
+(the privacy-conservative choice); one tie occurred. Each annotated face corresponds
+to a SORT track, and, consistent with the latching protocol of Section~4.1, the
+system's prediction for a face is \emph{partner} if its track was classified as
+\textsc{Interactor} at any point in the clip.
+
+I measured inter-annotator agreement with Cohen's~$\kappa$ for each of the six
+annotator pairs. Pairwise $\kappa$ ranged from 0.307 to 0.724 (mean 0.587), with
+five of the six pairs showing moderate or substantial agreement. The majority vote
+yielded 29 annotated faces: 7 interaction partners and 22 bystanders
+(Table~\ref{tab:sample_2b}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Composition of the human-annotated Phase~2b evaluation sample.}
+\label{tab:sample_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Clip category} & \textbf{Frames} & \textbf{Faces} & \textbf{Partners} & \textbf{Bystanders} \\
+\midrule
+Interaction & 5  & 15 & 7 & 8  \\
+Bystander   & 5  & 14 & 0 & 14 \\
+\midrule
+\textbf{Total} & \textbf{10} & \textbf{29} & \textbf{7} & \textbf{22} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\paragraph{Results.}
+Table~\ref{tab:confusion_2b} presents the confusion matrix for Phase~2b against the
+majority-vote labels.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Confusion matrix for the Phase~2b (full system) configuration on the
+human-annotated sample. Rows give the actual (human-labelled) class of each face and
+columns give the system's decision.}
+\label{tab:confusion_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Predicted Partner} & \textbf{Predicted Bystander} & \textbf{Total} \\
+\midrule
+\textbf{Actual partner}   & 4 (TP) & 3 (FN)  & 7 \\
+\textbf{Actual bystander} & 0 (FP) & 22 (TN) & 22 \\
+\textbf{Total}        & 4      & 25      & 29 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification metrics for the Phase~2a and Phase~2b configurations.}
+\label{tab:metrics_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Phase 2a} & \textbf{Phase 2b (Full System)} \\
+\midrule
+Evaluation set                      & 66 tracks, 1 annotator & 29 faces, 4 annotators \\
+\midrule
+Privacy Success Rate (PSR)          & 87.50\% & 100.00\% \\
+Interaction Preservation Rate (IPR) & 84.62\% & 57.14\% \\
+Precision                           & 81.48\% & 100.00\% \\
+Recall                              & 84.62\% & 57.14\% \\
+F$_1$ Score                         & 83.02\% & 72.73\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+Phase~2b produced no false positives: all 22 bystanders in the sample were blurred
+(PSR = 100\%), including the 8 bystanders who appeared in interaction clips
+alongside an active partner. Of the 7 interaction partners, 4 were correctly
+preserved and 3 were blurred (IPR = 57.14\%). Broken down by clip category, all 14
+faces in bystander clips were correctly blurred, and in interaction clips the
+system preserved 4 of 7 partners while blurring all 8 bystanders.
+
+Because the two configurations were evaluated on different samples, the
+comparison in Table~\ref{tab:metrics_2b} is indicative rather than conclusive. The
+Phase~2b sample is small: with only seven partners, each misclassified partner
+changes IPR by 14.3 percentage points. The 95\% Wilson confidence intervals are
+85.1-100\% for Phase~2b PSR and 25.0-84.2\% for Phase~2b IPR, compared with
+73.9-94.5\% (PSR) and 66.5-93.9\% (IPR) for Phase~2a; the intervals overlap for
+both metrics. The causes of the three Phase~2b false negatives are analysed in
+Section~\ref{sec:disc_failures}.
+
+\subsection{Phase 2b: Video-Clip Evaluation}
+\label{sec:results_clips}
+
+The still-frame study had two weaknesses. Its sample was small (seven partners),
+and annotators had to judge interaction from a single image, which explains its
+moderate agreement. I therefore ran a second, larger blind evaluation of the same
+Phase~2b system using short video clips with sound.
+
+\paragraph{Evaluation protocol.}
+I sampled face tracks from all 21 evaluation clips without reference to the
+system's decisions: in each interaction clip, the four longest tracks plus two
+randomly chosen tracks, and in each bystander clip, the four longest tracks. A track
+was eligible if it was visible for at least 60 frames (about two seconds) and its
+median face size was at least 32~pixels. This gave 104 clips (83 from interaction
+videos and 21 from bystander videos). Each clip lasts seven seconds: a one-second
+still frame showing which face to watch, followed by six seconds of the original,
+unblurred video with its original sound. A single yellow box marked the target face,
+and the clips were shown in a shuffled order with no indication of their source
+category or of the system's decision.
+
+For this study I defined an \emph{interaction partner} as any member of the camera
+wearer's group or conversation. This includes a person talking to the wearer and
+also a person who is with the wearer but not speaking at that moment, such as a
+friend at the same table or playing the same game. A \emph{bystander} is anyone not
+in the wearer's group, such as a stranger walking past or a person in a different
+group. This is broader than the still-frame instruction (actively talking to the
+wearer), and reflects the social reality that the members of the wearer's own group
+are not the people whose privacy is at risk. Three annotators (myself and two
+independent annotators) labelled each clip through a simple web page. The final
+label was obtained by majority vote. Two clips were marked undecidable by two of the
+three annotators and were excluded, leaving 102 labelled clips: 67 partners and 35
+bystanders.
+
+The system's decision for each clip is the decision visible in its output video: a
+face counts as preserved if it was left unblurred in at least half of the frames in
+which it was detected during the clip. I verified these decisions directly against
+the rendered output videos, and all 104 agreed with the decisions recorded by the
+pipeline.
+
+\paragraph{Agreement.}
+Agreement between annotators was almost perfect (Table~\ref{tab:clip_kappa}). The
+pairwise Cohen's~$\kappa$ ranged from 0.913 to 0.957 and Fleiss'~$\kappa$ across all
+three annotators was 0.942, compared with a mean pairwise $\kappa$ of 0.587 in the
+still-frame study. Seeing movement and hearing speech therefore made the labelling
+task far more reliable.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Inter-annotator agreement in the video-clip evaluation. Annotator A is
+myself.}
+\label{tab:clip_kappa}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Annotator pair} & \textbf{Cohen's $\kappa$} & \textbf{Raw agreement} \\
+\midrule
+A and B & 0.957 & 98.0\% \\
+A and C & 0.913 & 96.1\% \\
+B and C & 0.956 & 98.0\% \\
+\midrule
+\textbf{All three (Fleiss' $\kappa$)} & \textbf{0.942} & \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\paragraph{Results.}
+Table~\ref{tab:confusion_clips} gives the confusion matrix and
+Table~\ref{tab:metrics_clips} the metrics, overall and by clip category.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Confusion matrix for Phase~2b in the video-clip evaluation. Rows give the
+actual (human-labelled) class of each face and columns give the system's decision.}
+\label{tab:confusion_clips}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Predicted Partner} & \textbf{Predicted Bystander} & \textbf{Total} \\
+\midrule
+\textbf{Actual partner}   & 38 (TP) & 29 (FN) & 67 \\
+\textbf{Actual bystander} & 2 (FP)  & 33 (TN) & 35 \\
+\textbf{Total}            & 40      & 62      & 102 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Phase~2b metrics in the video-clip evaluation, with 95\% Wilson confidence
+intervals. IPR is not defined for bystander clips, which contain no partners.}
+\label{tab:metrics_clips}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{All clips} & \textbf{Interaction clips} & \textbf{Bystander clips} \\
+\midrule
+Faces evaluated & 102 & 81 & 21 \\
+PSR       & 94.29\% (81.4-98.4) & 92.86\% (68.5-98.7) & 95.24\% (77.3-99.2) \\
+IPR       & 56.72\% (44.8-67.9) & 56.72\% (44.8-67.9) & not defined \\
+Precision & 95.00\% & 97.44\% & not defined \\
+F$_1$     & 71.03\% & 71.70\% & not defined \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The system blurred 33 of 35 bystanders (PSR = 94.29\%), including 20 of the 21 faces
+in bystander clips and 13 of the 14 bystanders who appeared in interaction clips.
+When the system left a face unblurred, it was correct 95\% of the time. It preserved
+38 of 67 partners (IPR = 56.72\%). These figures closely match the still-frame study
+(PSR 100\%, IPR 57.14\%), but the IPR confidence interval is now about half as wide
+(44.8-67.9\% against 25.0-84.2\%), so the video-clip study confirms the earlier
+finding with much stronger evidence. Of the 29 partners that were blurred, 24 had a
+median face size below the 1.2\% area threshold, and 10 were confirmed as partners
+by the system later in the same video, after the six-second clip had ended. These
+failures are analysed in Section~\ref{sec:disc_failures}.
+
+\subsection{Offline Second Pass for Recorded Video}
+\label{sec:results_secondpass}
+
+The interaction latch already ensures that a confirmed partner is never blurred
+again. However, it works only forward in time: a partner is blurred until the
+system has gathered enough evidence to confirm them. When the video is recorded and
+processed after capture, the whole of each track is known in advance, so this
+limitation can be removed. I implemented a second processing pass over the recorded
+decisions, which applies two rules.
+
+\begin{enumerate}
+  \item \textbf{Retroactive latch.} A track that is confirmed as a partner at any
+        point is preserved for its whole time on screen, including the frames before
+        confirmation. This applies the principle that once a person is an interaction
+        partner, they remain one.
+  \item \textbf{Friend group.} A track that stays in view for at least ten seconds,
+        and is on screen together with a confirmed partner for at least half of that
+        time, is treated as a member of the wearer's group and preserved as well.
+        This covers friends who sit with the wearer but do not speak, while strangers
+        who pass by are rarely in view for that long. Requiring the presence of a
+        confirmed partner prevents the rule from preserving strangers who simply stay
+        in one place, such as a shop assistant.
+\end{enumerate}
+
+Neither rule requires additional model inference, since both operate on the
+decisions the pipeline has already made. Table~\ref{tab:secondpass} reports their
+effect on the 102 clips of the video-clip evaluation.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Effect of the offline second pass on the video-clip evaluation (102 clips,
+95\% Wilson confidence intervals).}
+\label{tab:secondpass}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Live system} & \textbf{+ Retroactive latch} & \textbf{+ Friend group} \\
+\midrule
+TP / FN / FP / TN & 38 / 29 / 2 / 33 & 48 / 19 / 3 / 32 & 53 / 14 / 3 / 32 \\
+PSR       & 94.29\% (81.4-98.4) & 91.43\% (77.6-97.0) & 91.43\% (77.6-97.0) \\
+IPR       & 56.72\% (44.8-67.9) & 71.64\% (59.9-81.0) & 79.10\% (67.9-87.1) \\
+Precision & 95.00\% & 94.12\% & 94.64\% \\
+F$_1$     & 71.03\% & 81.36\% & 86.18\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The retroactive latch recovered 10 partners at the cost of one additional
+bystander being preserved. The friend-group rule recovered a further 5 partners
+without any additional privacy leak. Together, the two rules raised IPR from 56.72\%
+to 79.10\% and F$_1$ from 71.03\% to 86.18\%, while PSR fell from 94.29\% to 91.43\%.
+To check that the ten-second limit was not simply fitted to these clips, I repeated
+the evaluation with limits from 10 to 60~seconds. Every limit in this range gave the
+same PSR (91.43\%) and an IPR between 73.13\% and 79.10\%, so the result is not
+sensitive to the exact value. Only a much shorter limit of five seconds admitted an
+additional bystander.
+
+Both rules were designed after examining the errors of the video-clip evaluation and
+are evaluated on the same labels, so these figures should be read as an indication
+of the benefit of the second pass rather than as an independent test. Both rules
+also require the whole recording and therefore apply to recorded video, not to
+live streaming.
+
+\subsection{Comparison with Blanket-Blurring Baseline}
+\label{sec:baseline_comparison}
+
+The blanket-blurring baseline applies Gaussian blur to every detected face in every
+frame, making no use of interaction cues. By construction, this baseline achieves a
+PSR of 100\% (every bystander is blurred) and an IPR of 0\% (every interaction
+partner is also blurred). The proposed system represents a qualitative departure
+from the baseline: Phase~2a sacrifices a small amount of PSR to recover interaction
+utility, while Phase~2b stays close to the baseline's PSR and still recovers a
+large part of the interaction utility (Table~\ref{tab:vs_baseline}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Comparison of the proposed system against the blanket-blurring baseline.
+Phase~2a was evaluated on the 66-track ground truth, Phase~2b on the 29-face
+still-frame sample (Section~\ref{sec:results_2b}) and on the 102-clip video sample
+(Sections~\ref{sec:results_clips} and~\ref{sec:results_secondpass}).}
+\label{tab:vs_baseline}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+Blanket-blur baseline      & 100\%   & 0\%     & N/A \\
+Phase~2a (geometry)        & 87.50\% & 84.62\% & 83.02\% \\
+Phase~2b, still frames     & 100.00\% & 57.14\% & 72.73\% \\
+Phase~2b, video clips      & 94.29\% & 56.72\% & 71.03\% \\
+Phase~2b + offline second pass & 91.43\% & 79.10\% & 86.18\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The baseline's perfect PSR is achieved at the cost of complete utility destruction:
+the camera wearer's interaction partners are indistinguishable from strangers in the
+output stream. The proposed Phase~2a system recovers 84.62\% of interaction partners
+(IPR) while correctly anonymizing 87.50\% of bystanders (PSR), at no additional
+hardware cost relative to the baseline, since both configurations share the same
+YOLOv8n-face detector and SORT tracker. In the video-clip evaluation, the Phase~2b
+system blurred 94.29\% of bystanders while preserving 38 of 67 partners that the
+baseline would have blurred, and with the offline second pass it preserved 53 of
+67 partners (79.10\%) while still blurring 91.43\% of bystanders.
+
+\subsection{Computational Performance}
+\label{sec:fps}
+
+I measured pipeline latency by re-running the full processing loop on a laptop
+CPU (Intel Core i-series, no GPU or NPU acceleration enabled) and timing each stage
+independently with a high-resolution wall-clock timer over a 300-frame clip. Table~\ref{tab:fps}
+reports the per-stage mean latency for the Phase~2a configuration.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Per-stage mean latency (Phase~2a, 300-frame clip, laptop CPU).}
+\label{tab:fps}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Stage} & \textbf{Mean latency (ms)} & \textbf{Fraction of total} \\
+\midrule
+Frame read          & 10.0  & 11.6\% \\
+Face detection (YOLOv8n-face) & 55.1 & 64.1\% \\
+Tracking (SORT)     & 20.1  & 23.4\% \\
+Classification      & 0.02  & $<$0.1\% \\
+Selective anonymization & 0.87  & 1.0\% \\
+\midrule
+\textbf{Total per frame} & \textbf{86.0} & \textbf{100\%} \\
+\textbf{Throughput}      & \multicolumn{2}{c}{\textbf{11.62 FPS}} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+Face detection with YOLOv8n-face dominates the pipeline at 55.1~ms per frame
+(64.1\% of total latency). The classification stage is negligible at 0.02~ms,
+confirming that the heuristic decision layer imposes no measurable overhead relative
+to the underlying detection and tracking stages.
+
+\paragraph{Raspberry Pi 5 projection.}
+I did not benchmark directly on a Raspberry Pi 5, as the target hardware was not
+available to me at the time of evaluation. Following the methodology described in
+Section~3.8, a conservative hardware scaling factor of 3.5$\times$ is applied to
+project performance on the ARM Cortex-A76 processor of the Raspberry Pi 5. This
+factor is derived from published YOLO inference benchmarks comparing Intel Core-class
+and ARM Cortex-A76 class processors on equivalent workloads. Applying this factor to
+the measured 86.0~ms per-frame latency yields an estimated throughput of
+approximately \textbf{3.3 FPS} on the Raspberry Pi 5 for the Phase~2a configuration.
+
+\paragraph{Phase 2b landmark overhead.}
+I benchmarked the landmark stage separately by timing every MediaPipe Face
+Landmarker call within the same 300-frame loop, on the same laptop CPU under mains
+power. Across two runs, landmark extraction measured \textbf{20.1~ms per face crop}
+on average (21.1 and 19.1~ms); the benchmark clip averaged 0.99 tracked faces per
+frame, adding 19.9~ms per frame. This is consistent with the 15-25~ms per-face
+estimate anticipated in the methodology. Because detection latency varied between
+runs owing to background CPU load, the Phase~2b figure is obtained by adding the
+measured landmark cost to the Phase~2a baseline: $86.0 + 19.9 \approx 106$~ms per
+frame, or approximately \textbf{9.4 FPS} on the laptop CPU (the fastest directly
+measured Phase~2b run reached 9.9~FPS, in agreement). Applying the same
+3.5$\times$ scaling factor gives approximately \textbf{2.7 FPS} on the Raspberry
+Pi 5. Since landmark extraction runs once per tracked face, this overhead grows
+linearly with the number of faces in view.
+
+\paragraph{Battery power.}
+Wearable devices always run on battery, and a laptop on battery limits its processor
+speed to save energy. I therefore also benchmarked the pipeline with the laptop
+unplugged. On battery, landmark extraction took
+33.5~ms per face, and the complete Phase~2b pipeline measured 163.8~ms per frame
+(6.1~FPS); two Phase~2a runs measured 9.1 and 7.5~FPS. These runs were also
+affected by rising processor temperature over consecutive runs, so they represent a
+conservative, worst-case condition rather than a precise figure.
+Table~\ref{tab:power} summarises both conditions.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Measured laptop CPU throughput under mains and battery power, with the
+projected Raspberry Pi 5 throughput (3.5$\times$ scaling factor). Battery figures are
+single runs affected by rising processor temperature.}
+\label{tab:power}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Mains power}} & \multicolumn{2}{c}{\textbf{Battery power}} \\
+\textbf{Configuration} & \textbf{Laptop} & \textbf{Pi 5 (projected)} & \textbf{Laptop} & \textbf{Pi 5 (projected)} \\
+\midrule
+Phase~2a & 11.6~FPS & 3.3~FPS & 7.5-9.1~FPS & 2.1-2.6~FPS \\
+Phase~2b & 9.4~FPS  & 2.7~FPS & 6.1~FPS     & 1.7~FPS \\
+Landmarks per face & 20.1~ms & & 33.5~ms & \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+In summary, the complete pipeline runs entirely on a CPU, without a GPU, at
+11.62~FPS (Phase~2a) and approximately 9.4~FPS (Phase~2b) on a laptop under mains
+power, and at 6.1-9.1~FPS on battery, with projected Raspberry Pi 5 throughput of
+1.7-3.3~FPS across both conditions. The interaction classifier
+itself adds less than 0.1\% to the processing time, so the selective decision comes
+at almost no extra cost over blanket blurring. Section~5.3 discusses optimisations
+that can raise throughput further on edge hardware.
+
+% ==============================================================================
+%  CHAPTER 5 — DISCUSSION
+% ==============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+This chapter interprets the experimental results in the context of the research
+questions posed in Chapter~1, examines the failure modes of the proposed system,
+compares performance with the most relevant prior work, and identifies the
+limitations of the current evaluation.
+
+\subsection{Classification Performance and Research Question}
+\label{sec:disc_perf}
+
+The central research question asked whether a context-aware, multi-cue heuristic
+operating on geometry and facial landmarks could selectively anonymize bystanders
+while preserving interaction partners, without biometric recognition or cloud
+offloading. The Phase~2a evaluation results (PSR = 87.50\%, IPR = 84.62\%) confirm
+that this is feasible using only bounding-box geometry. A PSR of 87.50\% means that
+the system incorrectly exposes 12.5\% of bystander tracks; equivalently, 5 of the
+40 bystander tracks in the evaluation dataset were mistakenly preserved unblurred.
+An IPR of 84.62\% means that 15.38\% of interaction partners were unnecessarily
+blurred; equivalently, 4 of 26 partner tracks were incorrectly anonymized.
+
+Both error types carry concrete costs. A false positive (bystander preserved as
+partner) constitutes a \emph{privacy leak}: the system fails to protect an
+individual who did not consent to being recorded. A false negative (partner blurred
+as bystander) constitutes a \emph{utility loss}: the wearer's conversation partner
+is anonymized, defeating the purpose of selective anonymization. The observed ratio
+of 5 FPs to 4 FNs reflects a roughly balanced trade-off, consistent with the
+system's design objective of avoiding strong asymmetry in either direction.
+
+The addition of Phase~2b landmark cues is expected to reduce false positives
+specifically: the yaw veto correctly classifies faces that are turned significantly
+away from the camera as bystanders, even if those faces happen to be large or
+central in the frame (which would incorrectly pass the Phase~2a geometry rule). The
+V-VAD boost conversely reduces false negatives by promoting faces that exhibit
+sustained mouth movement to \emph{Interactor} status, even when centrality is
+marginally insufficient.
+
+The Phase~2b results (Table~\ref{tab:metrics_2b}) are consistent with the first
+expectation: every bystander in the human-annotated sample was blurred, so no
+bystander's face was left visible in the output (FP = 0, PSR = 100\%). This includes
+eight bystanders who appeared in interaction clips next to an active partner. The
+second expectation was not borne out: IPR was 57.14\%, with three of seven partners
+blurred. As Section~\ref{sec:disc_failures} shows, these partners were not blurred
+because the head-pose check judged them to be facing away. They were blurred because
+their faces were too small in the frame to pass the proximity check, which is applied
+before the head-pose and speaking checks are considered. In the
+evaluated sample, the full system therefore behaved as a privacy-first classifier.
+
+The larger video-clip evaluation confirms this pattern with much stronger evidence.
+With almost perfect agreement between annotators ($\kappa = 0.942$) and 102 clips,
+the live Phase~2b system blurred 94.29\% of bystanders and preserved 56.72\% of
+partners, and when it preserved a face it was correct 95\% of the time. The
+privacy-first behaviour of the live system is therefore a stable property rather
+than an artefact of a small sample. The offline second pass shows that most of the
+remaining utility loss can be recovered without weakening privacy substantially:
+by applying the latch retroactively and recognising the wearer's group, IPR rose to
+79.10\% at a PSR of 91.43\%, giving the best balance of the configurations I
+evaluated (F$_1$ = 86.18\%). Together, these results answer the research question
+positively: interaction-aware selective anonymization can protect most bystanders
+while preserving most of the people the wearer is with, without face recognition or
+additional sensors.
+
+\subsection{Comparison with BystandAR}
+\label{sec:disc_bystandar}
+
+The closest prior system, BystandAR \cite{bystandar}, achieved PSR = 98.14\% and
+IPR = 96.27\% on a 16-participant evaluation with dedicated gaze-tracking and
+directional microphone hardware. The proposed system achieves lower accuracy (PSR
+87.50\%, IPR 84.62\% for Phase~2a; PSR 100\%, IPR 57.14\% for Phase~2b on a smaller
+annotated sample) using only a monocular RGB camera and CPU-only inference. This
+performance gap is expected and attributable to two factors: the richness of input
+modalities and the evaluation scale.
+
+BystandAR uses eye gaze as a direct signal of where the wearer is looking, which is
+a near-perfect proxy for interaction intent. The proposed system infers this
+indirectly from face geometry and pose, which is a weaker signal subject to ambiguity
+when bystanders happen to be close to the camera wearer (for example, in a crowded
+corridor). Additionally, BystandAR's evaluation involved 16 controlled participant
+sessions with standardised interaction protocols, whereas the present evaluation used
+21 naturalistic clips without controlled conditions.
+
+Despite this gap, the proposed system's significance lies in its deployment
+constraints: it requires no gaze tracker, no directional microphone array, and no
+dedicated wearable hardware. It operates on a commodity RGB camera using only
+CPU-bound inference, making it directly deployable on low-cost edge devices without
+hardware modification. This positions it as a practical privacy layer for consumer
+AR glasses such as the Meta Ray-Ban, which lack the dedicated sensors required by
+BystandAR.
+
+\subsection{Computational Feasibility and Optimisation Pathways}
+\label{sec:disc_fps}
+
+The measured throughput of 11.62 FPS on a laptop CPU shows that the complete
+pipeline runs at interactive rates without any GPU acceleration. On the Raspberry Pi 5,
+the projected throughput is approximately 3.3 FPS (Phase~2a) and 2.7 FPS (Phase~2b)
+with the unoptimised PyTorch implementation. Since face detection accounts for 64\% of
+the processing time, three optimisation pathways can raise this substantially:
+
+\begin{enumerate}
+  \item \textbf{ONNX export and quantisation.} Exporting YOLOv8n-face to ONNX INT8
+        format and running inference via ONNXRuntime with NEON-optimised kernels for
+        ARM can reduce detection latency by a factor of 2-3$\times$ on ARM hardware
+        relative to the PyTorch runtime used in the current evaluation.
+
+  \item \textbf{Reduced input resolution.} Processing frames at $416 \times 416$
+        rather than $640 \times 640$ reduces YOLO inference time by approximately
+        35\% with a modest reduction in detection recall for small, distant faces.
+        For the target use case of close-range egocentric video, this trade-off is
+        likely acceptable.
+
+  \item \textbf{Landmark extraction batching.} In the current implementation,
+        MediaPipe Face Landmarker is called once per face per frame. Batching
+        multiple face crops into a single inference call would reduce per-face
+        overhead, particularly when multiple faces are present simultaneously.
+\end{enumerate}
+
+With all three optimisations applied, achieving 8-12~FPS on the Raspberry Pi 5 is
+plausible, which is sufficient for processing recorded egocentric video (a common
+use case in AR privacy logging). Full-frame-rate operation on the Pi~5 can be reached by
+running the detector on a neural processing unit (NPU) or AI co-processor, which
+is included in many current smart-glasses processors.
+
+\paragraph{Comparison with commercial smart-glasses hardware.}
+To judge whether the evaluation hardware is representative, I compared it with
+current camera-equipped glasses (Table~\ref{tab:glasses}). Ray-Ban Meta and Meta
+Ray-Ban Display glasses use the Qualcomm Snapdragon AR1 Gen~1 platform
+\cite{ref:qcom_ar1}, which combines a quad-core CPU (reported at up to about
+1.9~GHz), dual image signal processors and a dedicated Hexagon neural processing unit
+(NPU), with 2~GB of RAM in the Display model \cite{ref:gsmarena_display}. Snap
+Spectacles (fifth generation) split the work across two Qualcomm Snapdragon processors
+and run for about 45 minutes per charge \cite{ref:spectacles5}, and Meta's Aria
+Gen~2 research glasses perform their machine perception on a custom low-power
+co-processor \cite{ref:aria2}.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Evaluation hardware compared with current camera-equipped glasses.
+Values are from manufacturer and press sources; ``not published'' means the
+manufacturer has not released the figure.}
+\label{tab:glasses}
+\renewcommand{\arraystretch}{1.3}
+\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Device} & \textbf{Processor} & \textbf{AI accelerator} & \textbf{Battery} & \textbf{Where vision AI runs} \\
+\midrule
+Laptop (my evaluation)    & Intel Core i5-13420H & none used & mains / battery & on device (CPU) \\
+Raspberry Pi 5 (target) & 4$\times$ Cortex-A76, 2.4~GHz & none & external & on device (CPU) \\
+Ray-Ban Meta          & Snapdragon AR1 Gen~1 & Hexagon NPU & about 4~h & mostly phone and cloud \\
+Meta Ray-Ban Display  & Snapdragon AR1 Gen~1 & Hexagon NPU & about 6~h & mostly phone and cloud \\
+Snap Spectacles (5th gen.) & 2$\times$ Snapdragon & not published & about 45~min & on device \\
+Meta Aria Gen~2       & custom co-processor & custom & 6-8~h & on device \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+This comparison supports the design choices of my research in three ways. First, the
+Raspberry Pi 5 is a reasonable stand-in for the CPU of current glasses: its four
+Cortex-A76 cores at 2.4~GHz are of the same class as the AR1's quad-core CPU, so
+the projected Pi~5 figures are a realistic estimate of CPU-only performance on such
+devices. Second, my evaluation used the CPU only, whereas every current glasses
+platform includes a neural processing unit. Face detection, which accounts for 64\%
+of the pipeline's processing time, is exactly the kind of workload an NPU
+accelerates. On a Snapdragon smartphone NPU, a quantised YOLO detector runs in about
+5.6~ms per frame against 53~ms on the same phone's CPU \cite{ref:ultralytics_qnn},
+and Qualcomm's quantised face detector runs in under 1~ms \cite{ref:qcom_facedet}.
+Glasses processors are smaller than smartphone processors, so these figures are not
+directly transferable, but they indicate that the CPU-only results reported here are
+a worst case for real glasses. Third, battery capacity, rather than raw speed, is
+the main constraint on glasses: Spectacles run for about 45 minutes, and current
+Ray-Ban Meta glasses send most vision AI to the paired phone or the cloud. Because
+my pipeline keeps all face processing on the device, it avoids sending bystanders'
+faces off the glasses, which Meta itself identifies as a central privacy concern for
+camera glasses \cite{ref:meta_bystander}. Reducing how often the detector runs, as
+proposed above, also directly reduces energy use.
+
+\subsection{Failure Mode Analysis}
+\label{sec:disc_failures}
+
+Analysis of the five false-positive tracks (bystanders incorrectly preserved as
+partners) reveals a consistent pattern: all five occurred in the \emph{interaction}
+video category, where people standing near the camera wearer were never directly
+addressed but occupied a large, central position in the frame for an extended
+period. In these cases, the area ratio and centrality thresholds are satisfied
+because the individual is physically close to the wearer, even though no interaction
+occurs. This ambiguity is precisely the scenario that the Phase~2b yaw veto is
+designed to address: a person who is nearby but looking in a different direction
+(yaw $> 40^\circ$) should be vetoed as a bystander regardless of proximity.
+
+The four false-negative tracks (partners incorrectly blurred) arose from brief
+interactions that began after a long period in which the face was peripheral, so
+the temporal hysteresis had not yet committed the track to the \emph{Interactor}
+state.
+
+\paragraph{Phase 2b failure modes.}
+All three Phase~2b false negatives share a single cause: at the annotated frame,
+each partner's face occupied between 0.36\% and 0.72\% of the frame area, below the
+area threshold $\tau_{\mathrm{area}} = 1.2\%$. Two of them occur in one frame of a
+seated group setting, where the same person was covered by two overlapping
+detections that SORT tracked as separate tracks; this duplicate-track artefact
+counts one missed partner twice. The third is a partner standing at a service
+counter near the edge of the frame, small and partly turned (yaw $\approx 25^\circ$,
+below the $40^\circ$ veto). In each case the area gate rejected the face before any
+landmark cue was considered. Because the V-VAD boost also requires
+$r_{\mathrm{area}} \geq \tau_{\mathrm{area}}$, it cannot rescue partners who converse
+from further away than the area threshold assumes, for example across a table.
+
+A further factor limits the influence of the landmark cues. MediaPipe Face
+Landmarker returned landmarks for only 50.8\% of the 224{,}519 logged face
+detections. For the remainder, which are typically small, motion-blurred or partially
+occluded faces, no yaw or MAR value is available and the classifier falls back to the
+Phase~2a geometry rule. Both observations point to the same improvement: relaxing
+the area threshold when landmarks confirm a frontal, speaking face, and improving
+landmark coverage on small faces (for example by upscaling the crop before landmark
+extraction).
+
+\paragraph{Video-clip failure modes.}
+The video-clip evaluation confirms the same dominant cause on a larger sample. Of
+the 29 partners the live system blurred, 24 had a median face size below the area
+threshold. The median face size of missed partners was 0.92\% of the frame, against
+1.71\% for partners the system preserved. Most of these were friends sitting further
+from the wearer around a table, who are partners under the group definition but
+appear smaller than the threshold assumes. In addition, 10 of the 29 were confirmed
+as partners later in the same video, which shows that the live system often
+recognises a partner correctly but too late. The offline second pass addresses both
+causes directly, and recovered 15 of the 29. Of the two bystanders the live system
+preserved, one was left unblurred for exactly half of the clip, the threshold of the
+per-clip decision rule, and the other was a person close to the wearer in an
+interaction clip.
+
+\subsection{Limitations}
+\label{sec:disc_limitations}
+
+The following limitations should be considered when interpreting the results of this
+evaluation.
+
+\textbf{Dataset scale and diversity.} The evaluation dataset comprises 21 clips
+collected from online sources rather than recorded for this study, so capture
+conditions such as camera model, mounting position and frame rate are uncontrolled
+and vary between clips. Interaction was evaluated only indoors, and the interaction
+clips are dominated by seated tabletop scenes; partner detection was therefore not
+tested in outdoor conversations, while bystander behaviour was tested only outdoors.
+Results may not generalise to other settings, lighting conditions or interaction
+styles. A larger dataset in which both categories span the same range of
+environments would provide a more robust assessment of generalisation.
+
+\textbf{Annotation scale and protocol.} I assigned the Phase~2a ground truth
+alone. Phase~2b was evaluated twice with blind protocols: on 29 faces from still
+frames by four annotators (mean $\kappa = 0.587$), and on 102 video clips by three
+annotators (Fleiss' $\kappa = 0.942$). I was one of the annotators in both studies
+and was familiar with the system design, although my labels agreed with the
+independent annotators' labels in 96-98\% of the video clips. The two Phase~2b
+studies also used different partner definitions (actively talking to the wearer,
+and member of the wearer's group). Because Phase~2a and Phase~2b were evaluated on
+different samples, differences between them are indicative rather than conclusive.
+
+\textbf{Offline second pass.} The retroactive latch and the friend-group rule were
+designed after examining the errors of the video-clip evaluation and were evaluated
+on the same labels. Although the result was stable across a wide range of time
+limits, a fresh set of labelled clips is needed for an independent test. Both rules
+also need the whole recording, so they apply to recorded video only.
+
+\textbf{Heuristic thresholds.} I set all eight threshold parameters
+(Table~\ref{tab:params}) empirically on the evaluation dataset itself. This risks
+overfitting to the specific conditions of the collected clips. A held-out validation set or
+cross-validation procedure would provide a fairer estimate of threshold robustness.
+
+\textbf{Absence of audio.} The V-VAD cue relies entirely on lip movement as a
+speech proxy and cannot distinguish between a person mouthing words, laughing,
+chewing, or speaking. Incorporating even a rudimentary microphone-based voice
+activity detector as a secondary cue would substantially reduce V-VAD ambiguity at
+negligible hardware cost on most wearable devices.
+
+\textbf{Hardware projection.} The Raspberry Pi 5 throughput figures (approximately
+3.3 FPS for Phase~2a and 2.7 FPS for Phase~2b) are estimates derived from a scaling factor rather than a direct
+measurement. They should be treated as an order-of-magnitude projection; actual
+performance may differ depending on OS configuration, thermal throttling, and the
+version of underlying inference libraries installed. The battery-power measurements
+are single runs affected by rising processor temperature, and I did not measure
+energy consumption directly, so the battery cost of continuous operation on glasses
+remains to be quantified.
+
+% ==============================================================================
+%  CHAPTER 6 — CONCLUSION
+% ==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Summary of Contributions}
+\label{sec:conclusion_summary}
+
+In this dissertation, I presented a context-aware, real-time privacy framework for
+egocentric video that selectively anonymizes bystanders while preserving the faces
+of active interaction partners. The framework operates as a five-stage sequential
+pipeline: face detection via YOLOv8n-face, multi-face tracking via SORT, interaction
+cue extraction, heuristic classification, and selective Gaussian blur anonymization.
+All stages execute on CPU-only hardware without GPU acceleration, biometric face
+recognition, or cloud offloading.
+
+The primary contribution of my research is the \emph{multi-cue interaction
+classifier}, which fuses four complementary signals derived from two information
+sources. The first two cues (face area ratio and center distance) are extracted
+from bounding-box geometry alone and require no additional model inference. The
+second two cues (head-pose yaw via PnP and Mouth Aspect Ratio via MediaPipe Face
+Landmarker) require facial landmark extraction but provide qualitatively different
+information: yaw provides a hard veto for faces that are turned away from the
+camera, while MAR-based V-VAD provides a temporal boost for faces exhibiting
+sustained lip movement. The classifier combines these cues through a priority-ordered
+decision function with temporal hysteresis and interaction latching, achieving PSR
+= 87.50\% and IPR = 84.62\% in the Phase~2a geometry-only configuration, evaluated
+against a ground-truth dataset of 66 unique face tracks from 21 egocentric video clips.
+With landmark cues enabled (Phase~2b), a blind four-annotator evaluation of 29 faces
+gave PSR = 100\% and IPR = 57.14\%, and a larger blind evaluation of 102 video
+clips with almost perfect annotator agreement ($\kappa = 0.942$) confirmed this
+with PSR = 94.29\% and IPR = 56.72\%. For recorded video, an offline second pass
+that applies the latch retroactively and recognises the members of the wearer's
+group raised IPR to 79.10\% at PSR = 91.43\% (F$_1$ = 86.18\%).
+
+A secondary contribution is the \emph{systematic comparison with the blanket-blurring
+baseline}. The baseline achieves PSR = 100\% but IPR = 0\%, making it unsuitable for
+any use case in which the wearer needs to interact with people in the scene. The
+proposed system recovers 84.62\% of interaction-partner utility (IPR) at a cost of
+12.5 percentage points of PSR relative to the baseline. This trade-off is
+appropriate for a system whose primary objective is to protect bystanders without
+degrading the wearer's social experience. With the offline second pass, the
+system preserved 79.10\% of the people in the wearer's group while still blurring
+91.43\% of bystanders, demonstrating that selective anonymization can recover most
+of the social value that blanket blurring destroys while keeping strong bystander
+protection.
+
+A third contribution is the \emph{edge-deployable implementation}. The pipeline is
+designed from the outset to run on commodity CPU hardware. The measured throughput
+of 11.62~FPS (Phase~2a) and approximately 9.4~FPS (Phase~2b) on a laptop CPU, with
+estimated Raspberry Pi~5 throughput of 3.3 and 2.7~FPS respectively,
+demonstrates that the approach is feasible on CPU-only edge hardware, and the
+per-stage analysis identifies a clear path to higher frame rates through model
+quantisation and hardware acceleration.
+
+Finally, the \emph{evaluation methodology} that I developed for this project,
+which includes blind annotation of still frames and of short video clips with
+sound, inter-annotator agreement measurement and verification of the system's
+decisions against its rendered output, forms a reusable protocol for future
+egocentric privacy research.
+
+\subsection{Relation to Prior Work}
+\label{sec:conclusion_prior}
+
+Compared to the most relevant prior system, BystandAR \cite{bystandar} (PSR~98.14\%,
+IPR~96.27\%), the proposed framework achieves lower accuracy but eliminates the
+hardware dependency on eye gaze trackers and directional microphones. Compared to
+blanket-blurring systems such as EgoBlur \cite{egoblur2023} and SafeAR
+\cite{ref:safear2025}, the proposed framework introduces the context-aware
+classification layer that all prior blanket systems lack.
+
+To my knowledge, the proposed system is the first to combine:
+(i) real-time selective anonymization in egocentric video,
+(ii) CPU-only edge deployment without biometric recognition,
+(iii) a multi-cue fusion of geometry, head pose, and V-VAD, and
+(iv) a quantitative evaluation distinguishing PSR from IPR as separate privacy and
+utility metrics.
+
+\subsection{Future Work}
+\label{sec:conclusion_future}
+
+I identify several directions for future investigation.
+
+\textbf{Learned classifier.} The heuristic decision function could be replaced with
+a lightweight learned binary classifier (e.g., a shallow MLP or logistic regression
+model trained on the cue vectors) that generalises better across environments and
+interaction styles than hand-tuned thresholds.
+
+\textbf{Audio-visual fusion.} Incorporating a microphone-based voice activity
+detector alongside the visual V-VAD cue would resolve ambiguous lip-movement cases
+and substantially improve IPR in noisy environments.
+
+\textbf{Independent and larger-scale evaluation.} The video-clip protocol should
+be applied to a fresh set of clips, to test the offline second pass independently,
+and to a larger, more diverse dataset, so that all configurations can be compared on
+a common ground truth.
+
+\textbf{Group recognition in live operation.} The retroactive latch and the
+friend-group rule currently need the whole recording. Delaying the output stream
+by a few seconds would give the system time to confirm partners and group members
+before their frames are shown, bringing most of the benefit of the second pass to
+live operation.
+
+\textbf{Adaptive proximity threshold.} Most Phase~2b false negatives fell below the
+fixed area threshold. Relaxing $\tau_{\mathrm{area}}$ when landmark cues confirm a
+frontal, speaking face, and improving landmark coverage on small faces, are
+direct routes to higher IPR without weakening PSR.
+
+\textbf{On-device deployment.} Direct benchmarking on the Raspberry Pi~5 with ONNX
+INT8 quantised models, combined with the input-resolution and batching optimisations
+described in Section~5.3, would validate or refine the throughput projection and
+identify any architecture-specific performance bottlenecks not captured by the
+current scaling-factor estimate.
+
+\textbf{Consent and transparency mechanisms.} The current system operates
+invisibly from the bystander's perspective. Future work could integrate BystandARIA's
+visible-light communication approach \cite{ref:bystandaria} as a complementary
+consent channel, allowing bystanders to actively signal their privacy preferences
+to the system.
+
+% ==============================================================================
+%  NEW REFERENCES: paste into \begin{thebibliography} in the main document
+% ==============================================================================
+% \bibitem{ref:qcom_ar1}
+% Qualcomm Technologies, ``Snapdragon AR1 Gen 1 Platform,'' product page. [Online].
+% Available: https://www.qualcomm.com/products/mobile/snapdragon/xr-vr-ar/snapdragon-ar1-gen-1-platform
+%
+% \bibitem{ref:gsmarena_display}
+% GSMArena, ``Meta unveils Ray-Ban Display and Ray-Ban Meta (Gen 2) smart glasses,'' 2025.
+% [Online]. Available: https://m.gsmarena.com/meta_rayban_display_and_rayban_meta_gen_2_smart_glasses_debut-amp-69560.php
+%
+% \bibitem{ref:spectacles5}
+% Snap Inc., ``SPS 2024: Introducing the new Spectacles and Snap OS,'' Snap Newsroom,
+% Sep. 2024. [Online]. Available: https://newsroom.snap.com/sps-2024-spectacles-snapos
+%
+% \bibitem{ref:aria2}
+% Meta, ``Introducing Aria Gen 2: Unlocking new research in machine perception,
+% contextual AI, robotics, and more,'' 2025. [Online]. Available:
+% https://www.meta.com/blog/project-aria-gen-2-next-generation-egocentric-research-glasses-reality-labs-ai-robotics/
+%
+% \bibitem{ref:ultralytics_qnn}
+% Ultralytics, ``Qualcomm QNN export for Ultralytics YOLO models,'' documentation.
+% [Online]. Available: https://docs.ultralytics.com/integrations/qnn
+%
+% \bibitem{ref:qcom_facedet}
+% Qualcomm AI Hub, ``Lightweight-Face-Detection-Quantized,'' model card, Hugging Face.
+% [Online]. Available: https://huggingface.co/qualcomm/Lightweight-Face-Detection-Quantized
+%
+% \bibitem{ref:meta_bystander}
+% Meta, ``Bystander privacy,'' white paper, 2026. [Online]. Available:
+% https://about.fb.com/wp-content/uploads/2026/07/Bystander-Privacy.pdf

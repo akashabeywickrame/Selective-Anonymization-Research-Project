@@ -79,6 +79,11 @@ class KalmanBoxTracker:
         self.confidence   = 1.0
 
     def predict(self) -> np.ndarray:
+        # Zero out velocity when track has been lost for a while —
+        # stops the Kalman prediction from drifting far off-screen,
+        # which would cause IoU re-match to fail when the face reappears.
+        if self.time_since_update > 5:
+            self.kf.x[4:] = 0   # freeze velocity
         self.kf.predict()
         self.age += 1
         self.time_since_update += 1

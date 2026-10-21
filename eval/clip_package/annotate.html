@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clip Annotation</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1d1d1b;--mut:#6b6b66;--acc:#1f6feb;--p:#1a7f37;--b:#b42318;--line:#e2e2dc}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--mut:#a3a29b;--line:#33332f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+video{width:100%;border-radius:8px;background:#000;display:block}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--card);color:var(--ink);cursor:pointer}
+button.p{border-color:var(--p);color:var(--p)}button.b{border-color:var(--b);color:var(--b)}
+button.sel.p{background:var(--p);color:#fff}button.sel.b{background:var(--b);color:#fff}button.sel.u{background:var(--mut);color:#fff}
+input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.mut{color:var(--mut)}.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}
+</style></head><body><main>
+<div class="card">
+<h1 style="margin:0 0 8px;font-size:22px">Is this person with the camera wearer?</h1>
+<p style="margin:0 0 8px">Each clip is filmed by a camera worn by a person. <b>One face has a yellow box.</b>
+Turn the <b>sound on</b>. Decide whether that person is an <b>interaction partner</b> or a <b>bystander</b>.
+Judge only what happens in the clip.</p>
+<ul style="margin:0 0 8px;padding-left:20px">
+<li><b>Interaction partner:</b> part of the camera wearer's group or conversation. This includes someone
+talking to the camera wearer <i>and</i> someone who is with them but not speaking right now, such as a
+friend at the same table, playing the same game, or listening.</li>
+<li><b>Bystander:</b> not part of the camera wearer's group, such as a stranger walking past, someone in the
+background, or someone in a different group.</li></ul>
+<p class="mut" style="margin:0">Keys: <kbd>P</kbd> partner &middot; <kbd>B</kbd> bystander &middot; <kbd>U</kbd> can't tell &middot;
+<kbd>&larr;</kbd>/<kbd>&rarr;</kbd> previous/next &middot; <kbd>R</kbd> replay. Your progress is saved in this browser.</p>
+<div class="row" style="margin-top:12px"><label for="name">Your name</label>
+<input id="name" placeholder="e.g. kasun" autocomplete="off"></div>
+</div>
+<div class="card">
+<div class="row" style="justify-content:space-between;margin-bottom:8px">
+<b id="title">Clip</b><span class="mut" id="count"></span></div>
+<div class="bar" style="margin-bottom:12px"><i id="prog" style="width:0"></i></div>
+<video id="vid" controls playsinline></video>
+<div class="row" style="margin-top:12px">
+<button class="p" data-l="p">Interaction partner (P)</button>
+<button class="b" data-l="b">Bystander (B)</button>
+<button class="u" data-l="">Can't tell (U)</button></div>
+<div class="row" style="margin-top:12px;justify-content:space-between">
+<div class="row"><button id="prev">&larr; Previous</button><button id="next">Next &rarr;</button></div>
+<button id="dl">Download my answers</button></div>
+<p class="mut" id="msg" style="margin:8px 0 0"></p>
+</div></main>
+<script>
+const CLIPS = ["clip_001", "clip_002", "clip_003", "clip_004", "clip_005", "clip_006", "clip_007", "clip_008", "clip_009", "clip_010", "clip_011", "clip_012", "clip_013", "clip_014", "clip_015", "clip_016", "clip_017", "clip_018", "clip_019", "clip_020", "clip_021", "clip_022", "clip_023", "clip_024", "clip_025", "clip_026", "clip_027", "clip_028", "clip_029", "clip_030", "clip_031", "clip_032", "clip_033", "clip_034", "clip_035", "clip_036", "clip_037", "clip_038", "clip_039", "clip_040", "clip_041", "clip_042", "clip_043", "clip_044", "clip_045", "clip_046", "clip_047", "clip_048", "clip_049", "clip_050", "clip_051", "clip_052", "clip_053", "clip_054", "clip_055", "clip_056", "clip_057", "clip_058", "clip_059", "clip_060", "clip_061", "clip_062", "clip_063", "clip_064", "clip_065", "clip_066", "clip_067", "clip_068", "clip_069", "clip_070", "clip_071", "clip_072", "clip_073", "clip_074", "clip_075", "clip_076", "clip_077", "clip_078", "clip_079", "clip_080", "clip_081", "clip_082", "clip_083", "clip_084", "clip_085", "clip_086", "clip_087", "clip_088", "clip_089", "clip_090", "clip_091", "clip_092", "clip_093", "clip_094", "clip_095", "clip_096", "clip_097", "clip_098", "clip_099", "clip_100", "clip_101", "clip_102", "clip_103", "clip_104"];
+const KEY = "clip-annotation-v2";
+let st = {i:0, name:"", lab:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) st = Object.assign(st, s); } catch(e) {}
+const $ = id => document.getElementById(id);
+const vid = $("vid");
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(e) {} }
+function show(){
+  const id = CLIPS[st.i];
+  $("title").textContent = id.replace("_"," ").replace("clip","Clip");
+  const done = CLIPS.filter(c => c in st.lab).length;
+  $("count").textContent = (st.i+1) + " of " + CLIPS.length + " \u00b7 " + done + " answered";
+  $("prog").style.width = (100*done/CLIPS.length) + "%";
+  vid.src = "clips/" + id + ".mp4"; vid.play().catch(()=>{});
+  document.querySelectorAll("button[data-l]").forEach(b => {
+    b.classList.toggle("sel", (id in st.lab) && st.lab[id] === b.dataset.l);
+  });
+  save();
+}
+function label(l){
+  st.lab[CLIPS[st.i]] = l;
+  if (st.i < CLIPS.length-1) st.i++;
+  show();
+}
+document.querySelectorAll("button[data-l]").forEach(b => b.onclick = () => label(b.dataset.l));
+$("prev").onclick = () => { if (st.i>0) { st.i--; show(); } };
+$("next").onclick = () => { if (st.i<CLIPS.length-1) { st.i++; show(); } };
+$("name").value = st.name;
+$("name").oninput = e => { st.name = e.target.value.trim(); save(); };
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  const k = e.key.toLowerCase();
+  if (k === "p") label("p"); else if (k === "b") label("b"); else if (k === "u") label("");
+  else if (k === "arrowright") $("next").click(); else if (k === "arrowleft") $("prev").click();
+  else if (k === "r") { vid.currentTime = 0; vid.play(); }
+});
+$("dl").onclick = () => {
+  const name = (st.name || "").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+  if (!name) { $("msg").textContent = "Please type your name at the top first."; $("name").focus(); return; }
+  const missing = CLIPS.filter(c => !(c in st.lab)).length;
+  let csv = "clip_id,label\n" + CLIPS.map(c => c + "," + (st.lab[c] || "")).join("\n") + "\n";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "annotations_" + name + ".csv"; a.click();
+  $("msg").textContent = missing ? ("Downloaded. " + missing + " clip(s) are still unanswered (saved as blank).")
+                                 : "Downloaded. Thank you! Please send the file back.";
+};
+show();
+</script></body></html>

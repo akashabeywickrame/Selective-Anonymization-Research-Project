@@ -1,0 +1,12 @@
+metric,value
+annotators,4
+tracks_evaluated,29
+tp,4
+tn,22
+fp,0
+fn,3
+precision,100.00%
+recall,57.14%
+f1,72.73%
+psr,100.00%
+ipr,57.14%

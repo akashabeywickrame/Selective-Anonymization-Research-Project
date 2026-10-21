@@ -1,0 +1,38 @@
+ANNOTATION INSTRUCTIONS
+=======================
+
+You will be shown a series of video frames from a wearable camera.
+Each frame has numbered faces (1, 2, 3...).
+
+YOUR TASK
+---------
+For each numbered face, decide:
+
+  p  =  Interaction Partner
+         This person is actively talking TO the camera wearer.
+         They are facing the camera and engaged in a conversation.
+
+  b  =  Bystander
+         This person is NOT interacting with the camera wearer.
+         They may be walking past, standing nearby, or in the background.
+
+HOW TO FILL IN THE CSV
+----------------------
+Open annotator_template.csv in Excel or any text editor.
+Fill in the "label" column with either  p  or  b  for each row.
+
+  frame_id  | face_number | label
+  ----------|-------------|------
+  frame_001 |      1      |  b
+  frame_001 |      2      |  p
+  frame_002 |      1      |  p
+  ...
+
+Save the file as:  annotations_YOUR_NAME.csv
+and send it back.
+
+NOTES
+-----
+- There is no right or wrong answer -- use your best judgement.
+- If you genuinely cannot tell, leave the label blank.
+- Each frame is independent -- do not worry about consistency across frames.

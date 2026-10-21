@@ -1,0 +1,11 @@
+metric,value
+tracks_evaluated,5508
+tp,445
+tn,4967
+fp,96
+fn,0
+precision,82.26%
+recall,100.00%
+f1,90.26%
+psr,98.10%
+ipr,100.00%

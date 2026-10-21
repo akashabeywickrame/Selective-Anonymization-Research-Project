@@ -23,7 +23,11 @@
 import math
 
 
-def compute_cues(bbox: list[int], frame_size: tuple[int, int]) -> dict:
+def compute_cues(
+    bbox: list[int],
+    frame_size: tuple[int, int],
+    landmarks: dict | None = None,
+) -> dict:
     """
     Compute egocentric interaction cues for a single tracked face.
 
@@ -31,13 +35,21 @@ def compute_cues(bbox: list[int], frame_size: tuple[int, int]) -> dict:
     ----------
     bbox       : [x1, y1, x2, y2] in absolute pixel coordinates
     frame_size : (width, height) of the frame the bbox lives in
+    landmarks  : optional dict from LandmarkExtractor.extract()
+                 {"yaw": float (degrees), "mar": float}
+                 Pass None to use Phase 2a cues only (bbox geometry).
 
     Returns
     -------
     dict with keys:
-        area_ratio   : float  — face area / frame area        (0.0 … 1.0)
-        center_dist  : float  — normalised distance of face center from frame
-                                center, where 0.0 = dead center and 1.0 = corner
+        area_ratio   : float  — face area / frame area              (0.0 … 1.0)
+        center_dist  : float  — normalised distance of face center
+                                from frame center (0.0 = center, ~1.0 = corner)
+        yaw          : float | None  — head-pose yaw in degrees.
+                                       Negative = turned left, positive = right.
+                                       None when landmarks unavailable.
+        mar          : float | None  — Mouth Aspect Ratio for V-VAD.
+                                       None when landmarks unavailable.
     """
     fw, fh = frame_size
     x1, y1, x2, y2 = bbox
@@ -61,7 +73,13 @@ def compute_cues(bbox: list[int], frame_size: tuple[int, int]) -> dict:
     half_diag = math.hypot(frame_cx, frame_cy)
     center_dist = math.hypot(dx, dy) / half_diag if half_diag > 0 else 0.0
 
+    # ── Phase 2b landmark cues (None when landmarks unavailable) ─────────────
+    yaw = landmarks["yaw"] if landmarks is not None else None
+    mar = landmarks["mar"] if landmarks is not None else None
+
     return {
         "area_ratio" : round(area_ratio, 5),
         "center_dist": round(center_dist, 4),
+        "yaw"        : round(yaw, 2) if yaw is not None else None,
+        "mar"        : round(mar, 4) if mar is not None else None,
     }

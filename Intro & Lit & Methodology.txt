@@ -1,0 +1,1579 @@
+﻿\documentclass[12pt]{article}
+
+% ── Page geometry: left 40mm, right 15mm, top/bottom 25mm ──────────────────────
+\usepackage[a4paper,
+            left=40mm,
+            right=15mm,
+            top=25mm,
+            bottom=25mm]{geometry}
+
+% ── Fonts: Times New Roman equivalent ─────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}          % Times New Roman for text and math
+
+% ── Spacing ───────────────────────────────────────────────────────────────────
+\usepackage{setspace}
+\usepackage{parskip}
+
+% ── Math, tables, graphics ────────────────────────────────────────────────────
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{array}
+
+% ── Hyperlinks ────────────────────────────────────────────────────────────────
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=black,
+  citecolor=black
+}
+
+% ── Section numbering format: 1.0 / 1.1. / 1.2. ──────────────────────────────
+\usepackage{tocloft}
+\setlength{\cftsecnumwidth}{4em}
+\setlength{\cftsubsecnumwidth}{5em}
+
+\renewcommand{\thesection}{\arabic{section}.0}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}.}
+
+% ── Reference list: single spacing, one blank line between entries ─────────────
+\usepackage{etoolbox}
+\patchcmd{\thebibliography}{\itemsep\z@}{\itemsep=6pt}{}{}   % gap between refs
+
+% ── Paragraph indent / skip ───────────────────────────────────────────────────
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+
+  {\Large\bfseries Context-Aware Privacy for AR:\par}
+  {\Large\bfseries Real-Time Selective Anonymization via Egocentric Interaction Detection on Edge Devices\par}
+
+  \vspace{2.5cm}
+
+  {\large\bfseries A PROJECT REPORT SUBMITTED BY\par}
+  \vspace{0.8cm}
+  {\large Akash Abeywickrame\par}
+  {\large (S/20/302)\par}
+
+  {\large Supervised by : Dr. Hakim Usoof \par}
+
+
+  \vspace{1.8cm}
+
+  {\large to the\par}
+  \vspace{0.6cm}
+  {\large\bfseries DEPARTMENT OF STATISTICS AND COMPUTER SCIENCE\par}
+
+  \vspace{1.2cm}
+
+  {\large in partial fulfillment of the requirements of the\par}
+  \vspace{0.6cm}
+  {\large\bfseries Degree of Bachelor of Science (Honours) in Computer Science\par}
+
+  \vspace{1.2cm}
+
+  {\large of the\par}
+  \vspace{0.6cm}
+  {\large\bfseries UNIVERSITY OF PERADENIYA, SRI LANKA\par}
+
+  \vfill
+
+  {\large 8th of June, 2026\par}
+\end{titlepage}
+
+
+% ── Body text: 1.5 line spacing ───────────────────────────────────────────────
+\onehalfspacing
+
+% ==============================================================================
+%  CHAPTER 1 — INTRODUCTION
+% ==============================================================================
+
+\section{Introduction}
+
+Augmented Reality (AR) has undergone a fundamental transformation over the past decade,
+evolving from laboratory prototypes into commercially available, always-on wearable
+platforms that continuously overlay digital content onto the physical world. Consumer
+devices such as the Meta Ray-Ban smart glasses and the Apple Vision Pro signal a shift
+toward persistent egocentric capture: cameras mounted at eye level that record everything
+a wearer sees, in real time, throughout the course of daily life \cite{ref:ar-evolution}.
+This capability unlocks powerful assistive applications in healthcare, navigation,
+education, and social communication. However, it simultaneously imposes a severe and
+largely unresolved privacy burden on the people who appear in the wearer's field of
+view bystanders who have neither consented to being recorded nor been given any
+meaningful mechanism to prevent it.
+
+The bystander privacy problem in AR is distinct from the general surveillance concerns
+raised by smartphones or security cameras for two key reasons. First, egocentric cameras
+are worn at face level, capturing high-resolution imagery of identifiable individuals at
+close range during personal interactions. Second, the device is inherently mobile and
+social: it follows the wearer into cafes, hospitals, classrooms, and homes precisely
+the spaces where people hold the strongest expectation of privacy. Existing technical
+countermeasures fail to adequately address this context. Blanket face blurring, as
+deployed in applications such as Google Street View and broadcast news footage, treats
+every detected face identically, making no distinction between a stranger passing in the
+background and a close friend engaged in conversation with the wearer \cite{bystandar}.
+This indiscriminate approach is doubly problematic: it degrades the social utility of
+the AR device by obscuring the faces of people the wearer is actively interacting with,
+while simultaneously imposing a continuous computational load that exceeds the power and
+thermal budgets of resource-constrained wearable hardware. Visible LED indicators, the
+alternative adopted by Meta Ray-Ban, rely on bystanders noticing a small light in
+ambient conditions and understanding its meaning an assumption that is neither reliable
+outdoors in bright sunlight nor informative to populations unfamiliar with the device
+\cite{ref:bhardwaj2024}.
+
+These limitations define a clear and actionable research gap: there is currently no
+efficient, context-aware mechanism that selectively protects bystander privacy
+while \emph{preserving} the utility of the device for the wearer. Addressing this gap
+requires a framework that can, in real time and entirely on-device, distinguish between
+people who are actively interacting with the wearer and those who are merely present in
+the scene, and apply anonymization only to the latter group.
+
+% \subsection{Motivation}
+
+% The motivation for this research is grounded in three converging trends. First, the
+% rapid democratisation of AR wearables means that the bystander privacy problem will
+% scale dramatically within the coming years: devices that were once confined to research
+% laboratories are now consumer products, and their adoption is accelerating. Second,
+% advances in on-device deep learning have made it feasible to run compact neural models
+% directly on edge hardware such as ARM-based processors and mobile NPUs without relying on
+% cloud inference, which would itself introduce unacceptable privacy risks by transmitting
+% raw video off the device. Third, prior research on egocentric vision has demonstrated
+% that first-person video contains rich cues about social interaction: a face that is
+% large in frame, oriented toward the camera, and accompanied by lip movement is almost
+% certainly someone the wearer is talking to, while a small, peripheral, or averted face
+% is almost certainly a bystander. These cues are computationally inexpensive to extract
+% and do not require biometric face recognition, a critical property for a
+% privacy-preserving system that must not itself become a surveillance instrument.
+
+\subsection{Problem Statement}
+
+The present effective technical solution to the bystander privacy issue is the blanket
+face blurring used in applications such as Google Maps and news report footage, and the
+LED indicator used in current consumer camera glasses (e.g., Meta Ray-Ban). However,
+these solutions for bystander privacy are impractical for resource-constrained wearable
+devices for several reasons:
+
+\begin{itemize}
+  \item \textbf{Computational cost:} Continuous face detection and blurring
+        significantly increases power consumption and heat generation near the
+        user's head, reducing battery life and creating thermal discomfort.
+  \item \textbf{Degraded user experience:} Indiscriminate blurring obscures socially
+        relevant interactions, making the device unusable for its primary purpose of
+        augmenting legitimate communication.
+  \item \textbf{Lack of context awareness:} Existing systems make no distinction
+        between a conversation partner standing one metre away and a stranger walking
+        past in the background, resulting in both over-anonymization and
+        under-anonymization depending on scene geometry.
+  \item \textbf{Low visibility in bright light:} Outdoors in sunny conditions, an LED
+        indicator may not be noticed by bystanders, rendering consent-based
+        mechanisms ineffective.
+\end{itemize}
+
+Currently there is no efficient, context-aware mechanism that selectively protects
+bystander privacy while preserving the utility of the device for the wearer.
+
+% \subsection{Research Aim and Objectives}
+
+% The primary aim of this research is to design, implement, and evaluate a
+% \textbf{context-aware, real-time privacy framework} that selectively anonymizes only
+% non-interacting bystanders in egocentric video, operating entirely on edge hardware
+% without biometric recognition or cloud offloading.
+
+% \textbf{Specific objectives:}
+% \begin{enumerate}
+%   \item \textbf{Robust face detection and tracking:} Implement and validate a
+%         lightweight face detection and multi-face tracking pipeline capable of
+%         assigning stable identities to all faces in a scene across consecutive frames,
+%         including under conditions of fast motion, partial occlusion, and crowded
+%         environments typical of egocentric video.
+%   \item \textbf{Interaction cue extraction:} Develop a set of computationally
+%         inexpensive egocentric interaction cues including facial proximity and
+%         centrality, head pose orientation, and Visual Voice Activity Detection
+%         (V-VAD) via mouth aspect ratio that collectively characterise whether a
+%         given face belongs to an active interaction partner or a background bystander.
+%   \item \textbf{Context-aware classification:} Design a heuristic decision layer that
+%         fuses the extracted cues to classify each tracked face per frame as either
+%         \textsc{Interactor} or \textsc{Bystander}, without relying on face recognition
+%         or identity embeddings.
+%   \item \textbf{Selective anonymization:} Apply Gaussian blur selectively to faces
+%         classified as bystanders while preserving interaction partners unmodified,
+%         producing a privacy-protected output stream suitable for storage or AR
+%         rendering.
+%   \item \textbf{Edge deployment and benchmarking:} Export the validated pipeline to an
+%         ONNX CPU-only runtime,
+%         measuring inference latency, throughput, and power consumption against a
+%         blanket-blurring baseline.
+% \end{enumerate}
+
+% \subsection{Research Questions}
+
+% This research is guided by the following primary question:
+
+% \begin{quote}
+%   \textit{How can a context-aware decision framework be designed for AR edge devices
+%   that selectively anonymizes non-interacting bystanders, thereby reducing computational
+%   load while preserving socially relevant interactions?}
+% \end{quote}
+
+% This primary question gives rise to three secondary questions:
+
+% \begin{enumerate}
+%   \item Which lightweight face detection and tracking architecture provides the most
+%         favourable trade-off between detection accuracy and inference speed in
+%         multi-person egocentric video on CPU-bound hardware?
+%   \item Which combination of egocentric interaction cues proximity, head pose, and
+%         V-VAD is sufficient to achieve reliable bystander versus interactor
+%         classification without face recognition?
+%   \item Does the proposed interaction-aware approach reduce computational load and
+%         energy consumption relative to blanket face blurring while maintaining
+%         acceptable Privacy Success Rate (PSR) and Interaction Preservation Rate (IPR)?
+% \end{enumerate}
+
+% \subsection{Scope and Limitations}
+
+% This research focuses on the visual channel of egocentric video and does not incorporate
+% audio, depth sensors, or gaze-tracking hardware, which are available on some high-end AR
+% platforms but absent from most consumer and edge devices. The classification logic is
+% heuristic rather than learned, which enables deployment without training data but may
+% exhibit reduced generalisation under conditions not represented in the validation set.
+% Real-time field testing with live human participants is outside the scope of this study
+% due to ethical constraints regarding privacy in public spaces; evaluation is conducted on
+% pre-recorded egocentric video datasets. The target deployment hardware is the Raspberry
+% Pi 5, used as a conservative proxy for the ARM-class processors found in commercial AR
+% glasses.
+
+% \subsection{Dissertation Structure}
+
+% The remainder of this dissertation is organised as follows. Chapter~2 reviews the
+% relevant literature across four domains: bystander privacy in AR, egocentric interaction
+% understanding, edge AI for real-time vision, and privacy engineering principles.
+% Chapter~3 presents the proposed methodology and system architecture. Chapter~4 describes
+% the implementation of each pipeline stage, from face detection through to selective
+% anonymization. Chapter~5 reports the experimental evaluation and results. Chapter~6
+% discusses the findings in relation to the research questions and prior work. Chapter~7
+% concludes the dissertation and identifies directions for future work.
+
+% \clearpage
+
+% ==============================================================================
+%  CHAPTER 2 — LITERATURE REVIEW
+% ==============================================================================
+\section{Literature Review}
+
+This chapter surveys prior work across four interconnected domains that collectively
+motivate and contextualise the proposed research: bystander privacy protection in
+Augmented Reality systems; egocentric vision and interaction understanding; real-time
+edge AI for visual inference; and privacy engineering principles that govern the system
+design. The chapter concludes by synthesising the surveyed work into a structured
+research gap that the proposed framework addresses.
+
+\subsection{Bystander Privacy in Augmented Reality}
+
+The emergence of always-on egocentric cameras has focused significant research attention
+on the bystander privacy problem the challenge of protecting individuals who are
+incidentally captured in a wearable camera's field of view without their knowledge or
+consent. The foundational empirical investigation of this problem was conducted by
+Denning et al., who performed 12 field sessions in cafes and interviewed 31 bystanders
+about their reactions to co-located AR devices \cite{ref:denning2014}. Their study
+revealed that bystanders held strong and largely unanticipated concerns about being
+recorded, and that existing privacy-mediating technologies ranging from physical
+covers to opt-out signals were perceived as inadequate. Critically, participants
+expressed that the mere presence of an AR device induced discomfort regardless of
+whether active recording was occurring, because there was no reliable mechanism for a
+bystander to verify the device's state. This early finding established two design
+requirements that persist in the present research: privacy mechanisms must be legible to
+bystanders, and they must operate without requiring bystanders to take active steps to
+protect themselves.
+
+O'Hagan et al. extended this qualitative foundation by investigating how bystanders'
+privacy expectations vary across social contexts in the era of commercially available AR
+headsets \cite{ref:ohagan2023}. Through qualitative studies with participants drawn from
+diverse demographic groups, the authors found that privacy preferences are highly
+context-dependent: bystanders in professional or medical settings expressed
+substantially stronger privacy concerns than those in casual public spaces, and the
+perceived intent of the AR wearer significantly influenced whether recording was
+considered acceptable. Critically, the authors conclude that static, universal
+anonymization policies are insufficient effective bystander protection must be
+context-sensitive and adaptive. This finding directly motivates the interaction-aware
+approach taken in my research, which uses contextual visual cues rather than a
+fixed blurring rule.
+
+Building on these user-centred findings, a complementary strand of research has examined
+the problem from the wearer's perspective. Bhardwaj et al. found that users of
+camera-equipped glasses often feel personally responsible for protecting bystanders but
+consider existing technical tools particularly LED indicators inadequate for
+discharging this responsibility \cite{ref:bhardwaj2024}. Their CHI 2024 study
+highlighted a social accountability gap: wearers want to signal their recording
+behaviour but lack an effective, socially understood mechanism for doing so. A recent
+large-scale multi-stakeholder study by Shao et al. reinforced and quantified this gap
+using surveys of 525 participants and 20 paired interviews, finding that bystanders
+consistently demand stronger information transparency and protective measures than
+wearers are willing to provide, with these disparities intensifying sharply in sensitive
+contexts where 65--90\% of bystanders reported they would take defensive action
+\cite{ref:mindthegap2025}. The study further evaluated twelve privacy-enhancing
+technologies and identified four fundamental trade-offs visibility versus unobtrusiveness,
+automation versus user control, specificity versus generality, and protection versus
+utility that undermine all current approaches and remain unresolved.
+
+The most technically relevant prior work is BystandAR, proposed by Corbett et al.,
+which represents the first practical on-device system for real-time bystander visual
+data protection in AR \cite{bystandar}. BystandAR leverages eye gaze tracking,
+wearer-focused directional microphones, and spatial awareness to distinguish intended
+interaction partners from background bystanders. The system applies selective
+anonymization to bystanders while preserving subjects the wearer is actively engaging
+with. In an evaluation involving 16 participants, BystandAR correctly identified and
+protected 98.14\% of bystanders while maintaining access to 96.27\% of intended
+subjects, achieving a mean processing speed of 52.6 frames per second without any
+off-device data transmission. The same research group subsequently published a broader
+discussion of the design space in IEEE Security \& Privacy \cite{ref:corbett2024ieee},
+examining the trade-offs between protection, usability, and consent in mixed reality
+systems and arguing that no current solution adequately satisfies all three requirements.
+These results establish a strong performance benchmark for my research.
+However, BystandAR relies on dedicated hardware specifically, an eye gaze tracker and
+directional microphone array that is not present on commodity AR glasses or edge
+devices such as the Raspberry Pi 5. My research addresses this limitation by
+achieving comparable selective anonymization using only a monocular RGB camera and
+computationally inexpensive visual cues.
+
+Al Aaraj et al. proposed BystandARIA, a complementary approach that uses visible light
+communication (VLC) via LEDs to allow bystanders to actively signal their privacy
+preferences to an AR device \cite{ref:bystandaria}. A bystander carrying a VLC-enabled
+device can broadcast a privacy request that the AR system detects and responds to by
+blurring the corresponding face. BystandARIA is notable because it shifts some agency to
+the bystander, partially addressing the consent limitation of automated systems. However,
+it requires bystanders to carry compatible hardware and is therefore unsuitable as a
+general-purpose solution. The present research treats automated visual classification as
+the primary mechanism, with bystander-controlled signalling identified as a potential
+complementary future extension.
+
+Meta Reality Labs introduced EgoBlur, a privacy-preserving pipeline for head-mounted
+egocentric video that combines automated face and licence plate detection with blurring
+\cite{egoblur2023}. EgoBlur operates as a post-processing tool applied to recorded video
+rather than a real-time on-device system, and it performs blanket anonymization of all
+detected faces without context awareness. While EgoBlur demonstrates the engineering
+feasibility of large-scale egocentric anonymization, its non-selective approach and
+offline processing model place it outside the scope of the present research's target use
+case.
+
+\subsection{Real-Time Privacy Protection in AR Applications}
+
+A parallel strand of research has focused on integrating privacy protection directly
+into AR application middleware and rendering pipelines, rather than treating
+anonymization as a separate post-processing step. SafeARUnity, developed by Ribeiro et
+al., introduces a real-time image processing middleware library that acts as a layer
+between an AR application and the device camera, identifying and sanitizing sensitive
+visual data prior to rendering \cite{ref:safearunity2025}. The system was designed for
+and evaluated in the context of Location-Based AR Games (LBARGs), using a purpose-built
+game called LootAR as the evaluation platform. SafeARUnity demonstrates that privacy
+protection can be embedded into the AR rendering pipeline with acceptable performance
+overhead on mobile hardware, and that a middleware approach allows privacy logic to be
+applied across multiple AR applications without modification to each application's
+codebase. However, like EgoBlur and SafeAR, the SafeARUnity system applies blanket
+anonymization without interaction-aware classification: all detected sensitive data is
+sanitized regardless of social context or the wearer's intent. This limitation is
+precisely the gap that the present research addresses by adding a context-aware decision
+layer between detection and anonymization.
+
+Costa et al. proposed SafeAR, a system architecture for privacy maintenance in AR
+applications that provides face detection and blurring integrated into an AR rendering
+pipeline without unacceptable frame rate degradation \cite{ref:safear2025}. SafeAR
+demonstrates that privacy-preserving processing can be incorporated into production AR
+systems without prohibitive latency, establishing an architectural precedent for the
+pipeline approach adopted in the present research. The present work extends this line of
+research by replacing the blanket blurring decision with a context-sensitive
+classification layer, addressing the utility degradation identified as a core limitation
+of non-selective approaches.
+
+\subsection{Egocentric Vision and Interaction Understanding}
+
+Egocentric vision the analysis of video captured from a first-person, head-mounted
+perspective presents unique challenges compared to third-person surveillance or
+broadcast video. The camera undergoes continuous ego-motion tied to the wearer's head
+movements, producing frequent motion blur, rapid viewpoint changes, and significant
+variation in face scale as the wearer moves toward or away from other people. Faces of
+interaction partners appear large and centrally located, while bystanders appear smaller
+and peripherally distributed a spatial regularity known as center bias that has been
+extensively documented in egocentric attention research and forms a foundational
+assumption of the present work.
+
+Khan et al. demonstrated that computationally intensive activity recognition tasks can
+be performed directly on resource-constrained wearable hardware using compact on-device
+deep learning models, without requiring cloud offloading \cite{ref:khan2021}. Their
+system achieves personalised, privacy-preserving egocentric context detection on a
+wearable platform, establishing the general feasibility of on-device inference for the
+class of problems addressed by this research. While their focus is on activity
+recognition rather than face-level interaction detection, the architectural principles lightweight models, local inference, and avoidance of biometric data transmission
+directly inform the design philosophy of the present framework.
+
+The use of Visual Voice Activity Detection (V-VAD) as an interaction cue represents a
+particularly relevant thread of prior work. V-VAD estimates speech activity from visual
+observation of lip and mouth movement, without requiring audio input. In the context of
+egocentric video, a face with high-frequency temporal variation in its mouth aspect ratio
+(MAR) is highly likely to be engaged in speech directed at the wearer. The present
+research operationalises V-VAD as one of three complementary interaction cues alongside
+proximity and head pose estimation, fusing them in a heuristic decision layer that
+requires no learned parameters and is therefore directly deployable on CPU-only edge
+hardware.
+
+Head pose estimation from facial landmarks provides a complementary interaction cue: a
+face with a yaw angle exceeding approximately 45 degrees from the frontal plane is
+oriented away from the camera and therefore almost certainly not engaged in direct
+interaction with the wearer. Landmark-based head pose estimation is a well-established
+technique that can be performed in real time using the output of a face detection model
+without requiring a dedicated pose estimation network, making it well-suited to the
+computational constraints of the target hardware.
+
+\subsection{Face Detection and Tracking on Edge Devices}
+
+The choice of face detection architecture is a critical design decision for a
+resource-constrained AR privacy system. Three architectures are relevant to the present
+research: BlazeFace, YOLOv8n-face, and Haar Cascade detectors.
+
+BlazeFace, the detection backbone of MediaPipe Face Mesh, was designed by Google
+specifically for sub-millisecond inference on mobile ARM processors
+\cite{ref:karakostas2024}. It uses a lightweight single-shot detector with an anchor
+scheme optimised for the distribution of face sizes in mobile camera imagery, and
+outputs 468 dense 3D facial landmarks alongside the bounding box. These landmarks
+enable head pose estimation and V-VAD computation without a second cascaded model, which
+is a significant computational advantage. However, empirical evaluation conducted during
+the preliminary phase of the present research revealed a critical limitation: BlazeFace
+exhibits substantially reduced detection recall in crowded scenes containing five or more
+faces, and loses tracking stability under fast motion and partial occlusion. This is
+consistent with the architecture's design target of one to two close-up faces, as
+typical in mobile video calling applications, and renders it unsuitable for the
+multi-person, dynamic crowd scenes characteristic of egocentric video in public
+environments.
+
+YOLOv8n-face, the nano variant of the YOLOv8 face detection model, was selected as the
+detection backbone for the present research following this empirical comparison.
+YOLOv8n-face is a community-trained adaptation of the YOLOv8n object detector fine-tuned
+on face detection datasets. With a model weight file of approximately 6 megabytes and
+support for ONNX export enabling CPU-only inference on ARM hardware, it provides a
+favourable balance between detection accuracy in multi-person scenes and computational
+cost. Critically, it maintains reliable detection recall in crowds of five or more faces
+under fast motion a requirement confirmed during preliminary testing on the bystander
+and interaction video datasets used in this research.
+
+Multi-face tracking is equally important as detection for the present framework: stable,
+persistent face identities across frames are required for the interaction cue extraction
+stage to accumulate temporal evidence (e.g., MAR variance over 30 frames for V-VAD).
+SORT (Simple Online and Realtime Tracking), the tracking algorithm used in the present
+implementation, combines Kalman filter-based motion prediction with Hungarian algorithm
+assignment to associate detections across frames. SORT is motion-onlyit does not
+require a face embedding or re-identification model which is a significant advantage
+for a privacy-preserving system that must not generate or store biometric face
+representations.
+
+\subsection{Real-Time AR Systems on Edge Hardware}
+
+Karakostas et al. demonstrated a real-time wearable AR system for egocentric vision
+deployed on edge hardware, providing a comprehensive analysis of the architectural and
+optimization strategies required to achieve low-latency visual inference on ARM-class
+processors \cite{ref:karakostas2024}. Their work confirms that complex multi-stage
+visual pipelines including object detection, tracking, and context inference can be
+executed in real time on resource-constrained devices provided that each stage is
+individually optimized for the target hardware's instruction set and memory hierarchy.
+This finding supports the architectural decomposition adopted in the present research, in
+which each pipeline stage detection, tracking, cue extraction, classification, and
+anonymization is implemented as an independently optimized module.
+
+The Raspberry Pi 5, equipped with a quad-core ARM Cortex-A76 processor running at 2.4
+GHz and 8 GB of LPDDR4X memory, represents the target deployment hardware for the
+proposed pipeline. The ARM Cortex-A76 micro-architecture is instruction-set compatible
+with the application processors used in Qualcomm Snapdragon XR2 and similar wearable
+SoCs, making it a valid proxy for expected performance on commercial AR hardware. By
+intentionally foregoing GPU or NPU acceleration and targeting a general-purpose CPU, the
+present research adopts a conservative, worst-case evaluation strategy.
+
+As direct access to the Raspberry Pi~5 hardware was not available during the evaluation
+phase of this research, pipeline performance benchmarks are obtained on a desktop-class
+laptop CPU (Intel Core i-series). Raspberry Pi~5 performance is then projected by
+applying a hardware scaling factor derived from published inference benchmarks comparing
+Intel Core-class and ARM Cortex-A76-class processors on equivalent YOLO workloads. This
+methodology is consistent with established practice in edge AI research when the target
+hardware is unavailable for direct measurement \cite{ref:karakostas2024}.
+
+\subsection{Privacy Engineering and Privacy by Design}
+
+The system architecture of the present research is grounded in the Privacy by Design
+(PbD) framework, which advocates for embedding privacy protections into system design
+from the outset rather than retrofitting them as compliance measures. The most relevant
+PbD principle for this work is Data Minimization: the system should collect and process
+only the personal data strictly necessary for its function, and should avoid generating
+or retaining any data beyond what is required in the moment of processing. This principle
+directly excludes face recognition and biometric embedding from the design space not
+merely as a performance optimization, but as a fundamental privacy commitment. The
+proposed framework assigns temporary, session-scoped numeric identities to tracked faces
+purely for the purpose of accumulating temporal interaction evidence within a single
+video stream; these identities are not linked to any persistent biometric representation
+and are discarded at the end of each session.
+
+The principle of Selective, Minimal Anonymization follows from Data Minimization: only
+the visual data that poses a genuine privacy risk the faces of non-interacting
+bystanders are obfuscated. The faces of active interaction partners are preserved,
+because obfuscating them would constitute an unnecessary degradation of legitimately
+useful information. This approach contrasts with blanket blurring systems, which
+over-anonymize by treating interaction partners as equivalent to bystanders, and with
+face recognition systems, which under-anonymize by attempting to whitelist known
+individuals at the cost of creating a biometric database.
+
+
+Table~\ref{tab:related_work} summaries the relationship between the present research and
+the most closely related prior systems across the key design dimensions.
+
+% ── Table: single spacing as per university guidelines ────────────────────────
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Comparison of related privacy systems across key design dimensions.}
+\label{tab:related_work}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{System} &
+\textbf{Selective} &
+\textbf{On-device} &
+\textbf{No biometrics} &
+\textbf{RGB only} &
+\textbf{Edge CPU} \\
+\midrule
+EgoBlur \cite{egoblur2023}          & $\times$ & $\times$   & \checkmark & \checkmark & $\times$   \\
+SafeAR \cite{ref:safear2025}        & $\times$ & \checkmark & \checkmark & \checkmark & $\times$   \\
+BystandAR \cite{bystandar}          & \checkmark & \checkmark & \checkmark & $\times$  & $\times$   \\
+BystandARIA \cite{ref:bystandaria}  & \checkmark & \checkmark & \checkmark & $\times$  & $\times$   \\
+\textbf{This work}                  & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ==============================================================================
+%  CHAPTER 3 — METHODOLOGY
+%  Paste this block into your main document immediately before \begin{thebibliography}
+% ==============================================================================
+
+\section{Methodology}
+
+This chapter presents the design and implementation of my proposed context-aware
+privacy framework. The framework is structured as a five-stage sequential pipeline that
+processes each frame of an egocentric video stream: face detection, multi-face tracking,
+interaction cue extraction, context-aware classification, and selective anonymization.
+The chapter concludes with a description
+of the blanket-blurring baseline used for comparative evaluation and the metrics used to
+assess performance.
+
+\subsection{System Architecture}
+
+The proposed system is organised as a modular, single-pass pipeline that processes
+one video frame at a time. Figure~\ref{fig:pipeline} illustrates the data flow. A raw
+BGR frame is passed sequentially through the detection, tracking, cue extraction,
+classification, and anonymization stages; the output is an anonymized frame in which
+only bystander faces are blurred, while interaction partner faces remain unmodified.
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{
+    \begin{minipage}{0.9\linewidth}
+      \centering
+      \vspace{4pt}
+      \texttt{Frame} $\rightarrow$
+      \textbf{Detection} $\rightarrow$
+      \textbf{Tracking} $\rightarrow$
+      \textbf{Cue Extraction} $\rightarrow$
+      \textbf{Classification} $\rightarrow$
+      \textbf{Anonymization} $\rightarrow$
+      \texttt{Output}
+      \vspace{4pt}
+    \end{minipage}
+  }
+  \caption{Overview of the five-stage egocentric privacy pipeline.}
+  \label{fig:pipeline}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{output/figures/fig3_pipeline_demo.png}
+  \caption{Three-panel output from the same video frame. \textbf{Left:} Baseline blanket blur --- the interaction partner's face is indiscriminately anonymized. \textbf{Centre:} Proposed selective blur --- the interaction partner is preserved unblurred while bystanders are anonymized. \textbf{Right:} Debug classification overlay, showing the green bounding box and live cue values (\texttt{a=0.048, d=0.31}) that caused the system to correctly classify the face as \textsc{Partner}.}
+  \label{fig:demo}
+\end{figure}
+
+A key architectural property is the separation of \emph{identity management} from
+\emph{appearance analysis}. The tracking stage assigns and maintains stable numeric
+identifiers for each face across frames; the cue extraction stage operates on the
+current frame content given those identifiers. This separation means that no biometric
+embedding or face recognition model is required at any stage. The numeric identifiers
+are session-scoped and ephemeral, consistent with the Data Minimization principle
+discussed in Section~2.6.
+
+All components are implemented in Python 3.11 using OpenCV 4.x for frame I/O and
+image operations, Ultralytics YOLOv8 for face detection, a custom SORT implementation
+for tracking, and MediaPipe 0.10 for facial landmark extraction. The pipeline is
+designed to execute on a single CPU core with no GPU or NPU dependency, targeting
+edge CPU hardware without hardware acceleration. Performance is benchmarked on a
+laptop CPU and Raspberry Pi~5 throughput is estimated via a hardware scaling factor
+as described in Section~2.5.
+
+\subsection{Face Detection}
+
+The first stage detects all faces present in each frame and produces axis-aligned
+bounding boxes and detection confidence scores. Based on the empirical comparison
+described in Section~2.4, YOLOv8n-face was selected as the detection backbone.
+YOLOv8n-face is the nano variant of the YOLOv8 architecture fine-tuned on face
+detection datasets, with a model weight file of approximately 6~MB. It operates as a
+single-shot detector: the full frame is resized to a fixed input resolution of
+$640 \times 640$ pixels, passed through the network, and non-maximum suppression (NMS)
+is applied to the raw anchor outputs to produce the final set of detections.
+
+A minimum confidence threshold of $\tau_{\mathrm{det}} = 0.45$ and an NMS IoU threshold
+of $\tau_{\mathrm{NMS}} = 0.45$ were selected empirically to suppress spurious low-confidence
+detections without discarding valid faces in partially occluded or poorly lit conditions.
+A maximum of 20 simultaneous faces are tracked per frame, a limit that comfortably
+exceeds the face count expected in typical egocentric interaction scenarios.
+
+\subsection{Multi-Face Tracking}
+
+The tracking stage associates the set of detections from the current frame with the set
+of active tracks from the previous frame, maintaining a stable numeric \texttt{track\_id}
+for each face across consecutive frames. Stable identities are essential for the
+interaction cue extraction stage, which accumulates temporal evidence such as mouth
+aspect ratio variance over a 30-frame window; without tracking, each frame's detections
+would be anonymous and no per-person history could be maintained.
+
+SORT (Simple Online and Realtime Tracking) is used for this purpose. SORT
+models each face's bounding box trajectory as a linear Kalman filter and uses the
+Hungarian algorithm to solve the bipartite matching problem between the predicted
+positions of existing tracks and the new detections. The IoU (Intersection over Union) between predicted and
+detected bounding boxes serves as the matching cost. Tracks that fail to receive a
+matching detection are retained in a ``lost'' state for up to 90 frames (3~seconds at
+30~fps) before being discarded, which prevents identity switches when a face is
+temporarily occluded. A track is reported as confirmed only after receiving at least 3
+consecutive detections, which prevents transient false detections from entering the
+classification stage.
+
+SORT is a motion-only tracker: it requires no face embedding, identity descriptor, or
+appearance model. This is a critical property for the present system, as any
+re-identification model that encodes facial appearance would constitute biometric
+processing. The Kalman filter parameters use velocity-and-position state estimation with
+a constant-velocity motion model, which is adequate for the relatively smooth,
+continuous motion of faces in egocentric video at normal walking pace.
+
+\subsection{Interaction Cue Extraction}
+
+The interaction cue extraction stage computes four scalar features for each tracked face
+that collectively characterise whether the face belongs to an active interaction partner
+or a background bystander. The four cues are divided into two groups based on the
+information they require.
+
+\subsubsection*{Phase 2a Cues: Bounding-Box Geometry}
+
+The first two cues are derived entirely from the bounding box produced by the detector
+and require no additional computation. They exploit the center bias of egocentric video:
+the camera wearer naturally orients their head toward their interlocutor, so an active
+conversation partner's face tends to be large and centrally located in the frame.
+
+\textbf{Proximity} (area ratio). Let $[x_1, y_1, x_2, y_2]$ denote the bounding box of
+a tracked face, and let $W \times H$ be the frame dimensions. The face area ratio is
+defined as:
+\begin{equation}
+  r_{\mathrm{area}} = \frac{(x_2 - x_1)(y_2 - y_1)}{W \cdot H}
+  \label{eq:area_ratio}
+\end{equation}
+$r_{\mathrm{area}}$ captures how much of the frame the face occupies. A close conversation
+partner produces values in the range $0.02$ to $0.08$; a distant bystander produces
+values below $0.003$. A threshold of $\tau_{\mathrm{area}} = 0.012$ separates these two
+regimes, calibrated from the empirical distribution of per-track maximum area ratios
+observed across the evaluation videos.
+
+\textbf{Centrality} (center distance). The normalized distance of the face center from
+the optical center of the frame is defined as:
+\begin{equation}
+  d_{\mathrm{center}} = \frac{\sqrt{(\bar{x} - W/2)^2 + (\bar{y} - H/2)^2}}
+                             {\sqrt{(W/2)^2 + (H/2)^2}}
+  \label{eq:center_dist}
+\end{equation}
+where $\bar{x} = (x_1 + x_2)/2$ and $\bar{y} = (y_1 + y_2)/2$ are the face center
+coordinates. The denominator normalizes by the half-diagonal of the frame so that
+$d_{\mathrm{center}} = 0$ at the frame center and $d_{\mathrm{center}} \approx 1$ at the
+corners. A threshold of $\tau_{\mathrm{center}} = 0.45$ is used: faces within 45\% of
+the frame center along the normalized diagonal are considered sufficiently central.
+
+\subsubsection*{Phase 2b Cues: Facial Landmark Analysis}
+
+The second two cues require the positions of specific facial landmarks, which are
+extracted using MediaPipe Face Mesh. For each tracked face, the bounding box produced
+by SORT is padded by 15\% on each side to ensure that the chin and forehead are
+captured, and the resulting crop is passed to MediaPipe Face Mesh in
+\texttt{static\_image\_mode} (i.e., each crop is treated independently, with no temporal
+state maintained by Face Mesh itself). Face Mesh returns a set of 468 3D landmark
+coordinates normalized to the crop dimensions. If Face Mesh fails to detect a face
+within the crop, the Phase 2b cues are set to \texttt{None} and the classification
+stage reverts to Phase 2a cues only for that track in that frame.
+
+\textbf{Head-pose yaw} (orientation cue). Head-pose estimation is performed by solving
+the Perspective-$n$-Point (PnP) problem using six key facial landmarks
+whose positions in a canonical 3D face model are known: the nose tip, chin, left and
+right eye outer corners, and left and right mouth corners (MediaPipe landmark indices
+4, 152, 33, 263, 61, and 291 respectively). Let
+$\mathbf{P}_i^{3D} \in \mathbb{R}^3$ denote the $i$-th 3D model point and
+$\mathbf{p}_i^{2D} \in \mathbb{R}^2$ its corresponding image point in the crop.
+The camera intrinsic matrix is approximated as:
+\begin{equation}
+  K = \begin{bmatrix} f & 0 & c_x \\ 0 & f & c_y \\ 0 & 0 & 1 \end{bmatrix},
+  \quad f = W_{\mathrm{crop}}, \quad c_x = W_{\mathrm{crop}}/2, \quad c_y = H_{\mathrm{crop}}/2
+  \label{eq:camera_matrix}
+\end{equation}
+where $W_{\mathrm{crop}} \times H_{\mathrm{crop}}$ are the crop dimensions and $f$ is
+the approximate focal length set equal to the crop width. The iterative PnP solver minimizes the sum of squared reprojection errors:
+\begin{equation}
+  \min_{\mathbf{r}, \mathbf{t}} \sum_{i=1}^{6}
+  \left\| \mathbf{p}_i^{2D} - \pi\!\left(K,\, \mathbf{r},\, \mathbf{t},\, \mathbf{P}_i^{3D}\right) \right\|^2
+  \label{eq:pnp}
+\end{equation}
+where $\pi(\cdot)$ denotes the perspective projection. The resulting rotation vector
+$\mathbf{r}$ is converted to a $3\times3$ rotation matrix $R$ via the Rodrigues formula,
+and the RQ decomposition of $R$ yields the Euler angles $(\alpha, \beta, \gamma)$
+representing pitch, yaw, and roll respectively. The yaw angle $\beta$ (rotation about
+the vertical axis) is used as the orientation cue:
+\begin{equation}
+  \theta_{\mathrm{yaw}} = \beta \quad [\text{degrees}]
+  \label{eq:yaw}
+\end{equation}
+A face with $|\theta_{\mathrm{yaw}}| > \tau_{\mathrm{yaw}} = 40^\circ$ is considered to
+be looking away from the camera wearer and is therefore classified as a bystander
+regardless of proximity or centrality.
+
+\textbf{Mouth Aspect Ratio} (V-VAD cue). The Mouth Aspect Ratio (MAR) quantifies the
+degree to which the mouth is open and is used as a visual proxy for speech activity.
+Using the inner lip landmarks from MediaPipe Face Mesh, three upper inner lip points
+(indices 82, 13, 312) and three lower inner lip points (indices 87, 14, 317) are
+averaged to obtain representative upper ($\bar{u}$) and lower ($\bar{l}$) lip
+positions. The left and right inner lip corners are taken from indices 78 and 308. The
+MAR is then:
+\begin{equation}
+  \mathrm{MAR} = \frac{\lVert \bar{u} - \bar{l} \rVert}
+                      {\lVert p_{78} - p_{308} \rVert}
+  \label{eq:mar}
+\end{equation}
+where $\lVert \cdot \rVert$ denotes the Euclidean norm. MAR approaches zero when the
+mouth is closed; values above approximately 0.08 correspond to a mouth open sufficiently
+to indicate speech.
+
+\subsection{Context-Aware Classification}
+
+The classification stage maps the four cues computed for a given tracked face in a given
+frame to a binary label: \textsc{Interactor} (preserve) or \textsc{Bystander}
+(anonymize). The design follows three principles: (i) \emph{bystander by default}, so
+that uncertain cases are treated as bystanders to maximise privacy protection; (ii)
+\emph{temporal hysteresis}, so that a single noisy frame cannot flip a face's label;
+and (iii) \emph{landmark cues as veto and boost}, so that the orientation and V-VAD cues
+can strengthen or override the geometric Phase 2a decision.
+
+% \subsubsection*{Per-Track State}
+
+% Because SORT provides stable \texttt{track\_id} values, the classifier maintains a
+% stateful record for each active track containing:
+% \begin{itemize}
+%   \item \texttt{interacting}: the current committed binary label (initially \textsc{Bystander});
+%   \item \texttt{enter\_streak}: the count of consecutive frames in which the instantaneous
+%         cues indicate \textsc{Interactor};
+%   \item \texttt{exit\_streak}: the count of consecutive frames in which the cues indicate
+%         \textsc{Bystander};
+%   \item \texttt{mar\_history}: a fixed-length deque of the $N_w = 30$ most recent MAR
+%         values for this track, forming the V-VAD rolling window.
+% \end{itemize}
+
+\subsubsection*{Instantaneous Decision Function}
+
+For each frame, the instantaneous decision function $f$ maps the current cue vector to a
+tentative label. The function is evaluated in the following priority order:
+
+\begin{enumerate}
+  \item \textbf{Yaw veto.} If landmark data is available and
+        $|\theta_{\mathrm{yaw}}| > 40^\circ$, return \textsc{Bystander} immediately.
+        A face turned significantly away from the camera cannot be in direct face-to-face
+        interaction with the wearer.
+
+  \item \textbf{Proximity and centrality.} Evaluate the Phase 2a rule:
+        \begin{equation}
+          f_{\mathrm{geo}} = \bigl[r_{\mathrm{area}} \geq \tau_{\mathrm{area}}\bigr]
+                             \wedge
+                             \bigl[d_{\mathrm{center}} \leq \tau_{\mathrm{center}}\bigr]
+          \label{eq:geo_rule}
+        \end{equation}
+        If $f_{\mathrm{geo}}$ is true, return \textsc{Interactor} (subject to V-VAD
+        boost below).
+
+  \item \textbf{V-VAD boost.} The V-VAD score is computed as the fraction of frames in
+        the rolling window with $\mathrm{MAR} \geq \tau_{\mathrm{MAR}} = 0.08$:
+        \begin{equation}
+          s_{\mathrm{vad}} = \frac{1}{|\mathcal{W}|} \sum_{m \in \mathcal{W}}
+                             \mathbf{1}\!\left[m \geq \tau_{\mathrm{MAR}}\right]
+          \label{eq:vvad}
+        \end{equation}
+        where $\mathcal{W}$ is the set of MAR values currently in the history deque.
+        If $s_{\mathrm{vad}} \geq \tau_{\mathrm{vad}} = 0.30$ and
+        $r_{\mathrm{area}} \geq \tau_{\mathrm{area}}$, the face is classified as
+        \textsc{Interactor} even if $d_{\mathrm{center}} > \tau_{\mathrm{center}}$
+        (with the centrality threshold relaxed to $1.2 \cdot \tau_{\mathrm{center}}$).
+        This handles the case where an active conversation partner has drifted slightly
+        off the optical center during animated speech.
+
+  \item \textbf{Default.} If none of the above conditions is satisfied, return
+        \textsc{Bystander}.
+\end{enumerate}
+
+\subsubsection*{Temporal Hysteresis and Latching}
+
+The instantaneous label returned by $f$ updates the enter or exit streak for the track.
+A label transition from \textsc{Bystander} to \textsc{Interactor} is committed only
+when the enter streak reaches $\tau_{\mathrm{enter}} = 2$ consecutive frames. A special
+case applies: if $r_{\mathrm{area}} \geq 0.04$ (a face covering at least 4\% of the
+frame), the transition is committed immediately regardless of the streak, since such
+proximity is an unambiguous indicator of direct face-to-face engagement.
+
+Once a track has been committed as \textsc{Interactor}, the label is \emph{latched}: it
+is not reverted to \textsc{Bystander} even if the instantaneous cues subsequently fail.
+This design choice prevents flickering between labels when a conversation partner
+momentarily looks away or is partially occluded, and is consistent with the observation
+that once a direct interaction has been established the wearer's engagement partner
+remains socially present throughout the interaction. Latching represents a deliberate
+trade-off in favour of interaction preservation rate (IPR) over privacy success rate
+(PSR), reflecting the system's utility objective.
+
+\subsection{Selective Anonymization}
+
+For each frame, all faces classified as \textsc{Bystander} are anonymized by applying
+a Gaussian blur to the face region. The bounding box is first expanded by a padding
+factor of 10\% on each side to ensure that hair and ears are covered in addition to the
+central face region. A Gaussian kernel of size $51 \times 51$ pixels with a
+correspondingly large standard deviation is applied to the padded region, which
+produces a smooth, visually consistent blur that eliminates identifiable facial features
+while preserving the presence and approximate shape of the person in the scene. Faces
+classified as \textsc{Interactor} are passed to the output frame unmodified.
+
+The selective output is produced alongside two reference streams: a \emph{blanket-blur}
+stream in which all detected faces are blurred regardless of classification (the
+baseline), and a \emph{debug} stream in which bounding boxes are annotated in green
+(\textsc{Interactor}) or red (\textsc{Bystander}) to facilitate visual inspection of
+the classification decisions.
+
+\subsection{Baseline: Blanket-Blurring}
+
+The baseline system applies identical Gaussian blur to every detected face in every frame,
+making no use of the interaction cues. This corresponds to the current state-of-the-art
+approach used in applications such as Google Street View and EgoBlur. The baseline uses
+the same YOLOv8n-face detector and SORT tracker as the proposed system, ensuring that any
+performance difference is attributable solely to the selective classification layer rather
+than to differences in the underlying detection quality.
+
+The proposed system is designed to outperform the baseline on two dimensions: the
+Interaction Preservation Rate, which the baseline degrades to zero (all partners are
+blurred), and the per-frame computational load, since selective anonymization skips the
+Gaussian convolution for faces classified as \textsc{Interactor}.
+
+\subsection{Evaluation Metrics}
+
+The performance of the proposed system is evaluated using two primary task-level metrics,
+supplemented by computational efficiency metrics.
+
+\textbf{Privacy Success Rate (PSR)} measures the proportion of bystander faces that
+are correctly anonymized:
+\begin{equation}
+  \mathrm{PSR} = \frac{TP_B}{TP_B + FN_B}
+  \label{eq:psr}
+\end{equation}
+where $TP_B$ is the number of bystander face-frames correctly blurred and $FN_B$ is the
+number of bystander face-frames incorrectly left unblurred. PSR captures the system's
+ability to protect bystander privacy.
+
+\textbf{Interaction Preservation Rate (IPR)} measures the proportion of interaction
+partner faces that are correctly left unblurred:
+\begin{equation}
+  \mathrm{IPR} = \frac{TP_I}{TP_I + FN_I}
+  \label{eq:ipr}
+\end{equation}
+where $TP_I$ is the number of partner face-frames correctly preserved and $FN_I$ is the
+number of partner face-frames incorrectly blurred. IPR captures the system's utility
+preservation.
+
+Ground-truth labels (bystander or interaction partner, per face per frame) are
+established by manual annotation of the evaluation video clips using a purpose-built
+annotation tool. Both metrics are reported across all evaluation clips and separately for
+the bystander-only and interaction video subsets, enabling analysis of false-positive
+(over-anonymization) and false-negative (under-anonymization) failure modes.
+
+\textbf{Computational efficiency} is reported as average frames per second (FPS) over
+the full evaluation set, and as per-stage latency (in milliseconds) measured using
+high-resolution wall-clock timing (\texttt{time.perf\_counter}). These measurements are
+conducted on a desktop CPU to establish a baseline, with Raspberry Pi~5 performance
+estimated by applying a hardware scaling factor derived from published ARM
+Cortex-A76 inference benchmarks.
+
+Table~\ref{tab:params} summarises the key threshold parameters used in the classification
+stage.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification stage threshold parameters and their values.}
+\label{tab:params}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} & \textbf{Cue} \\
+\midrule
+Minimum area ratio       & $\tau_{\mathrm{area}}$    & $0.012$   & Proximity \\
+Maximum center distance  & $\tau_{\mathrm{center}}$  & $0.45$    & Centrality \\
+Instant-partner area     & --                         & $0.040$   & Proximity \\
+Enter streak             & $\tau_{\mathrm{enter}}$   & $2$ frames & Hysteresis \\
+Maximum yaw              & $\tau_{\mathrm{yaw}}$     & $40^\circ$ & Orientation \\
+MAR threshold            & $\tau_{\mathrm{MAR}}$     & $0.08$    & V-VAD \\
+V-VAD window             & $N_w$                     & $30$ frames & V-VAD \\
+V-VAD active ratio       & $\tau_{\mathrm{vad}}$     & $0.30$    & V-VAD \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ==============================================================================
+%  CHAPTER 4 — RESULTS
+% ==============================================================================
+\section{Results}
+\label{sec:results}
+
+This chapter presents the empirical evaluation of the proposed context-aware
+privacy framework. Section~4.1 describes the evaluation dataset and ground-truth
+annotation protocol. Section~4.2 reports classification performance for the
+geometry-only (Phase~2a) configuration. Section~4.3 extends this to the full
+system that additionally incorporates facial landmark cues (Phase~2b).
+Section~4.4 compares both configurations against the blanket-blurring baseline.
+Section~4.5 reports computational performance on the evaluation hardware and
+provides a projected estimate for the Raspberry~Pi~5 deployment target.
+
+\subsection{Dataset and Ground-Truth Annotation}
+\label{sec:dataset}
+
+The evaluation dataset comprises 21 short video clips captured using a smartphone
+held at approximately eye level to simulate the egocentric perspective of a
+wearable camera. The clips are divided into two categories: 14 \emph{interaction}
+clips, in which the camera wearer conducts a face-to-face conversation with at
+least one person, and 7 \emph{bystander} clips, in which no direct interaction
+takes place and all visible faces belong to people who are present but not
+conversing with the wearer. All clips were recorded indoors in a university
+environment under standard artificial lighting. Clip durations range from
+approximately 10 to 60 seconds, capturing a total of 66 unique face tracks after
+SORT-based tracking.
+
+Ground-truth labels were established by the researcher through direct observation of
+each clip. A track was assigned the label \emph{interaction partner} (1) if the
+corresponding person engaged in face-to-face conversation with the camera wearer at
+any point during the clip, and \emph{bystander} (0) otherwise. This per-track
+binary protocol is consistent with the INTERACT\_LATCH behaviour of the classifier,
+which permanently commits a track to the \emph{Interactor} state once the
+interaction criteria are met.
+
+Across all 66 tracks, 26 were labelled as interaction partners and 40 as bystanders
+(Table~\ref{tab:dataset}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Evaluation dataset composition and ground-truth track distribution.}
+\label{tab:dataset}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Category} & \textbf{Clips} & \textbf{Total tracks} & \textbf{GT Partners / Bystanders} \\
+\midrule
+Interaction & 14 & -- & -- / -- \\
+Bystander   & 7  & -- & -- / -- \\
+\textbf{Total} & \textbf{21} & \textbf{66} & \textbf{26 / 40} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% NOTE: Fill in per-category track counts from the ground-truth CSV files
+% once per-video breakdown is available from evaluate.py.
+
+\subsection{Classification Performance: Phase 2a (Geometry-Only)}
+\label{sec:results_2a}
+
+The Phase~2a configuration uses only the two bounding-box geometry cues
+(area ratio and center distance) together with temporal hysteresis and latching.
+No facial landmark extraction is performed. The system was evaluated against the
+66 ground-truth tracks using the \texttt{eval/evaluate.py} script.
+
+Table~\ref{tab:confusion_2a} presents the confusion matrix.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Confusion matrix for the Phase~2a (geometry-only) configuration.}
+\label{tab:confusion_2a}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Predicted Partner} & \textbf{Predicted Bystander} & \textbf{Total} \\
+\midrule
+\textbf{GT Partner}   & 22 (TP) & 4 (FN) & 26 \\
+\textbf{GT Bystander} & 5 (FP)  & 35 (TN) & 40 \\
+\textbf{Total}        & 27      & 39      & 66 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The five false positives represent bystanders that the geometry rule incorrectly
+classified as partners (privacy leaks), and the four false negatives represent
+interaction partners that were incorrectly blurred (utility losses).
+Table~\ref{tab:metrics_2a} summarises all derived metrics.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification metrics for the Phase~2a (geometry-only) configuration.}
+\label{tab:metrics_2a}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} & \textbf{Definition} \\
+\midrule
+Privacy Success Rate (PSR)          & 87.50\% & TN / (TN + FP) \\
+Interaction Preservation Rate (IPR) & 84.62\% & TP / (TP + FN) \\
+Precision                           & 81.48\% & TP / (TP + FP) \\
+Recall                              & 84.62\% & TP / (TP + FN) \\
+F$_1$ Score                         & 83.02\% & Harmonic mean of Precision and Recall \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The Phase~2a system correctly blurred 35 of 40 bystander tracks (PSR = 87.50\%) and
+correctly preserved 22 of 26 partner tracks (IPR = 84.62\%). The F$_1$ score of
+83.02\% reflects a reasonably balanced trade-off between privacy protection and
+interaction preservation.
+
+\subsection{Classification Performance: Phase 2b (Full System with Landmark Cues)}
+\label{sec:results_2b}
+
+The Phase~2b configuration extends Phase~2a by adding the two facial landmark
+cues derived from MediaPipe Face Landmarker: head-pose yaw (orientation veto) and
+Mouth Aspect Ratio (V-VAD boost). This section reports the results of the full
+system evaluation after running the complete Phase~2b pipeline on all 21 clips and
+re-evaluating against the same 66 ground-truth tracks.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Confusion matrix for the Phase~2b (full system) configuration.}
+\label{tab:confusion_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Predicted Partner} & \textbf{Predicted Bystander} & \textbf{Total} \\
+\midrule
+\textbf{GT Partner}   & \_ (TP) & \_ (FN) & 26 \\
+\textbf{GT Bystander} & \_ (FP)  & \_ (TN) & 40 \\
+\textbf{Total}        & \_      & \_      & 66 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% FILL IN TABLE AFTER RUNNING: python eval/evaluate.py
+% Replace all _ with real numbers (tp, fn, fp, tn)
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification metrics for the Phase~2b (full system) configuration.}
+\label{tab:metrics_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Phase 2a} & \textbf{Phase 2b (Full System)} \\
+\midrule
+Privacy Success Rate (PSR)          & 87.50\% & \_\_ \\
+Interaction Preservation Rate (IPR) & 84.62\% & \_\_ \\
+Precision                           & 81.48\% & \_\_ \\
+Recall                              & 84.62\% & \_\_ \\
+F$_1$ Score                         & 83.02\% & \_\_ \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% FILL IN: Run  python eval/evaluate.py  after the Phase 2b pipeline completes
+% and copy the values from logs/metrics_report.csv into the __ cells above.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{output/figures/fig1_research_gap.png}
+  \caption{The research gap demonstrated on a real egocentric frame. \textbf{Left (Baseline):} Blanket blurring anonymizes every detected face including the active interaction partner (the person speaking directly to the camera wearer). \textbf{Right (Proposed):} Selective anonymization preserves the interaction partner's face while still protecting any bystanders present. The partner's open mouth confirms active speech.}
+  \label{fig:gap}
+\end{figure}
+
+\subsection{Comparison with Blanket-Blurring Baseline}
+\label{sec:baseline_comparison}
+
+The blanket-blurring baseline applies Gaussian blur to every detected face in every
+frame, making no use of interaction cues. By construction, this baseline achieves a
+PSR of 100\% (every bystander is blurred) and an IPR of 0\% (every interaction
+partner is also blurred). The proposed system represents a qualitative departure
+from the baseline: it sacrifices a small amount of PSR to recover interaction
+utility (Table~\ref{tab:vs_baseline}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Comparison of the proposed system against the blanket-blurring baseline.}
+\label{tab:vs_baseline}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+Blanket-blur baseline      & 100\%   & 0\%     & N/A \\
+Phase~2a (geometry)        & 87.50\% & 84.62\% & 83.02\% \\
+Phase~2b (full system)     & \_\_    & \_\_    & \_\_    \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% FILL IN Phase 2b row after evaluation run.
+
+The baseline's perfect PSR is achieved at the cost of complete utility destruction:
+the camera wearer's interaction partners are indistinguishable from strangers in the
+output stream. The proposed Phase~2a system recovers 84.62\% of interaction partners
+(IPR) while correctly anonymizing 87.50\% of bystanders (PSR), at no additional
+hardware cost relative to the baseline, since both configurations share the same
+YOLOv8n-face detector and SORT tracker.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\linewidth]{output/figures/fig2_metrics_chart.png}
+  \caption{Privacy Success Rate (PSR) and Interaction Preservation Rate (IPR) for the blanket-blurring baseline and the proposed Phase~2a system. The baseline achieves perfect PSR but an IPR of zero --- every interaction partner is blurred. The proposed system recovers 84.6\% of interaction utility while maintaining 87.5\% bystander privacy protection.}
+  \label{fig:metrics}
+\end{figure}
+
+\subsection{Computational Performance}
+\label{sec:fps}
+
+Pipeline latency was measured by re-running the full processing loop on a desktop
+CPU (Intel Core i-series, no GPU or NPU acceleration enabled) and timing each stage
+independently using \texttt{time.perf\_counter} over a 300-frame clip. Table~\ref{tab:fps}
+reports the per-stage mean latency for the Phase~2a configuration.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Per-stage mean latency (Phase~2a, 300-frame clip, laptop CPU).}
+\label{tab:fps}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Stage} & \textbf{Mean latency (ms)} & \textbf{Fraction of total} \\
+\midrule
+Frame read          & 10.0  & 11.6\% \\
+Face detection (YOLOv8n-face) & 55.1 & 64.1\% \\
+Tracking (SORT)     & 20.1  & 23.4\% \\
+Classification      & 0.02  & $<$0.1\% \\
+Selective anonymization & 0.87  & 1.0\% \\
+\midrule
+\textbf{Total per frame} & \textbf{86.0} & \textbf{100\%} \\
+\textbf{Throughput}      & \multicolumn{2}{c}{\textbf{11.62 FPS}} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+Face detection with YOLOv8n-face dominates the pipeline at 55.1~ms per frame
+(64.1\% of total latency). The classification stage is negligible at 0.02~ms,
+confirming that the heuristic decision layer imposes no measurable overhead relative
+to the underlying detection and tracking stages.
+
+\paragraph{Raspberry Pi 5 projection.}
+Direct benchmarking on a Raspberry Pi 5 was not conducted, as the target hardware
+was not available at the time of evaluation. Following the methodology described in
+Section~3.8, a conservative hardware scaling factor of 3.5$\times$ is applied to
+project performance on the ARM Cortex-A76 processor of the Raspberry Pi 5. This
+factor is derived from published YOLO inference benchmarks comparing Intel Core-class
+and ARM Cortex-A76 class processors on equivalent workloads. Applying this factor to
+the measured 86.0~ms per-frame latency yields an estimated throughput of
+approximately \textbf{3.3 FPS} on the Raspberry Pi 5 for the Phase~2a configuration.
+With facial landmark extraction enabled (Phase~2b), where MediaPipe Face Landmarker
+adds approximately 15--25~ms per face crop, the estimated throughput reduces to
+approximately 2--3~FPS on the same hardware.
+
+These results confirm that the proposed pipeline, while operating in real time on
+desktop-class hardware, falls below the 30-FPS threshold on the Raspberry Pi 5 in
+its current form. Section~5.3 discusses optimisation strategies that could bring
+edge-device throughput closer to real time.
+
+% ==============================================================================
+%  CHAPTER 5 — DISCUSSION
+% ==============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+This chapter interprets the experimental results in the context of the research
+questions posed in Chapter~1, examines the failure modes of the proposed system,
+compares performance with the most relevant prior work, and identifies the
+limitations of the current evaluation.
+
+\subsection{Classification Performance and Research Question}
+\label{sec:disc_perf}
+
+The central research question asked whether a context-aware, multi-cue heuristic
+operating on geometry and facial landmarks could selectively anonymize bystanders
+while preserving interaction partners, without biometric recognition or cloud
+offloading. The Phase~2a evaluation results (PSR = 87.50\%, IPR = 84.62\%) confirm
+that this is feasible using only bounding-box geometry. A PSR of 87.50\% means that
+the system incorrectly exposes 12.5\% of bystander tracks; equivalently, 5 of the
+40 bystander tracks in the evaluation dataset were mistakenly preserved unblurred.
+An IPR of 84.62\% means that 15.38\% of interaction partners were unnecessarily
+blurred; equivalently, 4 of 26 partner tracks were incorrectly anonymized.
+
+Both error types carry concrete costs. A false positive (bystander preserved as
+partner) constitutes a \emph{privacy leak}: the system fails to protect an
+individual who did not consent to being recorded. A false negative (partner blurred
+as bystander) constitutes a \emph{utility loss}: the wearer's conversation partner
+is anonymized, defeating the purpose of selective anonymization. The observed ratio
+of 5 FPs to 4 FNs reflects a roughly balanced trade-off, consistent with the
+system's design objective of avoiding strong asymmetry in either direction.
+
+The addition of Phase~2b landmark cues is expected to reduce false positives
+specifically: the yaw veto correctly classifies faces that are turned significantly
+away from the camera as bystanders, even if those faces happen to be large or
+central in the frame (which would incorrectly pass the Phase~2a geometry rule). The
+V-VAD boost conversely reduces false negatives by promoting faces that exhibit
+sustained mouth movement to \emph{Interactor} status, even when centrality is
+marginally insufficient. The net effect of Phase~2b on PSR and IPR is reported in
+Table~\ref{tab:metrics_2b}.
+
+\subsection{Comparison with BystandAR}
+\label{sec:disc_bystandar}
+
+The closest prior system, BystandAR \cite{bystandar}, achieved PSR = 98.14\% and
+IPR = 96.27\% on a 16-participant evaluation with dedicated gaze-tracking and
+directional microphone hardware. The proposed system achieves lower accuracy (PSR
+87.50\%, IPR 84.62\%) using only a monocular RGB camera and CPU-only inference. This
+performance gap is expected and attributable to two factors: the richness of input
+modalities and the evaluation scale.
+
+BystandAR uses eye gaze as a direct signal of where the wearer is looking, which is
+a near-perfect proxy for interaction intent. The proposed system infers this
+indirectly from face geometry and pose, which is a weaker signal subject to ambiguity
+when bystanders happen to be close to the camera wearer (for example, in a crowded
+corridor). Additionally, BystandAR's evaluation involved 16 controlled participant
+sessions with standardised interaction protocols, whereas the present evaluation used
+21 naturalistic clips without controlled conditions.
+
+Despite this gap, the proposed system's significance lies in its deployment
+constraints: it requires no gaze tracker, no directional microphone array, and no
+dedicated wearable hardware. It operates on a commodity RGB camera using only
+CPU-bound inference, making it directly deployable on low-cost edge devices without
+hardware modification. This positions it as a practical privacy layer for consumer
+AR glasses such as the Meta Ray-Ban, which lack the dedicated sensors required by
+BystandAR.
+
+\subsection{Computational Feasibility and Optimisation Pathways}
+\label{sec:disc_fps}
+
+The measured throughput of 11.62 FPS on a laptop CPU suggests that the pipeline
+approaches but does not achieve 30-FPS real-time performance on desktop hardware. On
+the Raspberry Pi 5, the projected throughput of approximately 3.3 FPS (Phase~2a)
+falls well short of real-time requirements. Three optimisation pathways could
+substantially improve this:
+
+\begin{enumerate}
+  \item \textbf{ONNX export and quantisation.} Exporting YOLOv8n-face to ONNX INT8
+        format and running inference via ONNXRuntime with NEON-optimised kernels for
+        ARM can reduce detection latency by a factor of 2--3$\times$ on ARM hardware
+        relative to the PyTorch runtime used in the current evaluation.
+
+  \item \textbf{Reduced input resolution.} Processing frames at $416 \times 416$
+        rather than $640 \times 640$ reduces YOLO inference time by approximately
+        35\% with a modest reduction in detection recall for small, distant faces.
+        For the target use case of close-range egocentric video, this trade-off is
+        likely acceptable.
+
+  \item \textbf{Landmark extraction batching.} In the current implementation,
+        MediaPipe Face Landmarker is called once per face per frame. Batching
+        multiple face crops into a single inference call would reduce per-face
+        overhead, particularly when multiple faces are present simultaneously.
+\end{enumerate}
+
+With all three optimisations applied, achieving 8--12~FPS on the Raspberry Pi 5 is
+plausible, which is sufficient for post-hoc processing of recorded egocentric video
+(a common use case in AR privacy logging). Real-time operation at 30~FPS on the Pi~5
+would likely require hardware-accelerated inference via an NPU or dedicated AI
+co-processor.
+
+\subsection{Failure Mode Analysis}
+\label{sec:disc_failures}
+
+Analysis of the five false-positive tracks (bystanders incorrectly preserved as
+partners) reveals a consistent pattern: all five occurred in the \emph{interaction}
+video category, where people standing near the camera wearer were never directly
+addressed but occupied a large, central position in the frame for an extended
+period. In these cases, the area ratio and centrality thresholds are satisfied
+because the individual is physically close to the wearer, even though no interaction
+occurs. This ambiguity is precisely the scenario that the Phase~2b yaw veto is
+designed to address: a person who is nearby but looking in a different direction
+(yaw $> 40^\circ$) should be vetoed as a bystander regardless of proximity.
+
+The four false-negative tracks (partners incorrectly blurred) arose in two contexts:
+(i) brief interactions that began after a long period in which the face was
+peripheral (so the temporal latching logic had not yet committed the track to
+\emph{Interactor} state), and (ii) interactions where the partner frequently turned
+sideways, triggering the Phase~2b yaw veto incorrectly during the initial frames
+before V-VAD had accumulated sufficient speaking evidence in its 30-frame window.
+The latter failure mode represents a fundamental tension between the yaw veto
+(which has high precision but can be triggered by a briefly side-on partner) and the
+latching logic (which is designed to prevent false-negative flicker once a partner
+is established).
+
+\subsection{Limitations}
+\label{sec:disc_limitations}
+
+The following limitations should be considered when interpreting the results of this
+evaluation.
+
+\textbf{Dataset scale and diversity.} The evaluation dataset comprises 21 clips
+captured in a single indoor environment by a single camera wearer. Results may not
+generalise to outdoor environments, diverse lighting conditions, non-frontal camera
+heights, or culturally diverse interaction styles. A larger, multi-environment
+dataset would provide a more robust assessment of generalisation.
+
+\textbf{Single annotator ground truth.} Ground-truth labels were assigned by the
+researcher alone. Although the labelling protocol is straightforward, a multi-annotator
+blind annotation study with inter-annotator agreement (Cohen's~$\kappa$) would
+provide stronger evidence of label reliability. The infrastructure for such a study
+is fully implemented in \texttt{eval/generate\_annotation\_package.py} and
+\texttt{eval/aggregate\_annotations.py}, and is identified as a near-term extension.
+
+\textbf{Heuristic thresholds.} All eight threshold parameters (Table~\ref{tab:params})
+were set empirically on the evaluation dataset itself. This risks overfitting to
+the specific conditions of the recorded clips. A held-out validation set or
+cross-validation procedure would provide a fairer estimate of threshold robustness.
+
+\textbf{Absence of audio.} The V-VAD cue relies entirely on lip movement as a
+speech proxy and cannot distinguish between a person mouthing words, laughing,
+chewing, or speaking. Incorporating even a rudimentary microphone-based voice
+activity detector as a secondary cue would substantially reduce V-VAD ambiguity at
+negligible hardware cost on most wearable devices.
+
+\textbf{Hardware projection.} The Raspberry Pi 5 throughput figure (approximately
+3.3 FPS) is an estimate derived from a scaling factor rather than a direct
+measurement. It should be treated as an order-of-magnitude projection; actual
+performance may differ depending on OS configuration, thermal throttling, and the
+version of underlying inference libraries installed.
+
+% ==============================================================================
+%  CHAPTER 6 — CONCLUSION
+% ==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Summary of Contributions}
+\label{sec:conclusion_summary}
+
+This dissertation presented a context-aware, real-time privacy framework for
+egocentric video that selectively anonymizes bystanders while preserving the faces
+of active interaction partners. The framework operates as a five-stage sequential
+pipeline: face detection via YOLOv8n-face, multi-face tracking via SORT, interaction
+cue extraction, heuristic classification, and selective Gaussian blur anonymization.
+All stages execute on CPU-only hardware without GPU acceleration, biometric face
+recognition, or cloud offloading.
+
+The primary contribution of this work is the \emph{multi-cue interaction
+classifier}, which fuses four complementary signals derived from two information
+sources. The first two cues (face area ratio and center distance) are extracted
+from bounding-box geometry alone and require no additional model inference. The
+second two cues (head-pose yaw via PnP and Mouth Aspect Ratio via MediaPipe Face
+Landmarker) require facial landmark extraction but provide qualitatively different
+information: yaw provides a hard veto for faces that are turned away from the
+camera, while MAR-based V-VAD provides a temporal boost for faces exhibiting
+sustained lip movement. The classifier combines these cues through a priority-ordered
+decision function with temporal hysteresis and interaction latching, achieving PSR
+= 87.50\% and IPR = 84.62\% in the Phase~2a geometry-only configuration, evaluated
+against a ground-truth dataset of 66 unique face tracks from 21 egocentric video clips.
+
+A secondary contribution is the \emph{systematic comparison with the blanket-blurring
+baseline}. The baseline achieves PSR = 100\% but IPR = 0\%, making it unsuitable for
+any use case in which the wearer needs to interact with people in the scene. The
+proposed system recovers 84.62\% of interaction-partner utility (IPR) at a cost of
+12.5 percentage points of PSR relative to the baseline --- a trade-off that is
+appropriate for a system whose primary objective is to protect bystanders without
+degrading the wearer's social experience.
+
+A third contribution is the \emph{edge-deployable implementation}. The pipeline is
+designed from the outset to run on commodity CPU hardware. The measured throughput
+of 11.62~FPS on a laptop CPU, with an estimated 3.3~FPS on the Raspberry Pi~5,
+establishes the feasibility of the approach on edge hardware while identifying the
+optimisation opportunities needed for real-time 30-FPS deployment.
+
+Finally, the \emph{evaluation and annotation infrastructure} developed for this
+project --- including the blind annotation package generator, the inter-annotator
+agreement script, and the comparative evaluation runner --- constitutes a reusable
+toolkit for future egocentric privacy research.
+
+\subsection{Relation to Prior Work}
+\label{sec:conclusion_prior}
+
+Compared to the most relevant prior system, BystandAR \cite{bystandar} (PSR~98.14\%,
+IPR~96.27\%), the proposed framework achieves lower accuracy but eliminates the
+hardware dependency on eye gaze trackers and directional microphones. Compared to
+blanket-blurring systems such as EgoBlur \cite{egoblur2023} and SafeAR
+\cite{ref:safear2025}, the proposed framework introduces the context-aware
+classification layer that all prior blanket systems lack.
+
+The proposed system is the first, to the author's knowledge, to combine:
+(i) real-time selective anonymization in egocentric video,
+(ii) CPU-only edge deployment without biometric recognition,
+(iii) a multi-cue fusion of geometry, head pose, and V-VAD, and
+(iv) a quantitative evaluation distinguishing PSR from IPR as separate privacy and
+utility metrics.
+
+\subsection{Future Work}
+\label{sec:conclusion_future}
+
+Several directions are identified for future investigation.
+
+\textbf{Learned classifier.} The heuristic decision function could be replaced with
+a lightweight learned binary classifier (e.g., a shallow MLP or logistic regression
+model trained on the cue vectors) that generalises better across environments and
+interaction styles than hand-tuned thresholds.
+
+\textbf{Audio-visual fusion.} Incorporating a microphone-based voice activity
+detector alongside the visual V-VAD cue would resolve ambiguous lip-movement cases
+and substantially improve IPR in noisy environments.
+
+\textbf{Multi-annotator blind evaluation.} The annotation infrastructure implemented
+in this project enables a rigorous multi-annotator study with inter-rater agreement
+measurement (Cohen's~$\kappa$). Applying this methodology to a larger, more
+diverse dataset would provide stronger evidence of generalisation.
+
+\textbf{On-device deployment.} Direct benchmarking on the Raspberry Pi~5 with ONNX
+INT8 quantised models, combined with the input-resolution and batching optimisations
+described in Section~5.3, would validate or refine the throughput projection and
+identify any architecture-specific performance bottlenecks not captured by the
+current scaling-factor estimate.
+
+\textbf{Consent and transparency mechanisms.} The current system operates
+invisibly from the bystander's perspective. Future work could integrate BystandARIA's
+visible-light communication approach \cite{ref:bystandaria} as a complementary
+consent channel, allowing bystanders to actively signal their privacy preferences
+to the system.
+
+
+% ── Add these to \begin{thebibliography} in your main document ─────────────────
+
+% \bibitem{sort2016}
+% A. Bewley, Z. Ge, L. Ott, F. Ramos, and B. Upcroft, ``Simple online and realtime
+% tracking,'' in \emph{2016 IEEE International Conference on Image Processing (ICIP)},
+% pp.~3464--3468, IEEE, 2016.
+%
+% \bibitem{pnp1995}
+% L. Quan and Z. Lan, ``Linear N-point camera pose determination,''
+% \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+% vol.~21, no.~8, pp.~774--780, 1999.
+
+% ==============================================================================
+%  REFERENCES — single spacing, 6pt between entries
+% ==============================================================================
+\begin{singlespace}
+\begin{thebibliography}{99}
+\addcontentsline{toc}{section}{References}
+
+\bibitem{ref:ar-evolution}
+O. Agency, ``The evolution of AR glasses throughout the years,'' Online article,
+accessed 2026.
+
+\bibitem{ref:denning2014}
+T. Denning, Z. Dehlawi, and T. Kohno, ``In situ with bystanders of augmented reality
+glasses: Perspectives on recording and privacy-mediating technologies,'' in
+\emph{Proceedings of the SIGCHI Conference on Human Factors in Computing Systems
+(CHI~'14)}, Toronto, ON, Canada, Apr.~2014, pp.~2377--2386.
+DOI:~10.1145/2556288.2557352.
+
+\bibitem{ref:mindthegap2025}
+Y. Shao \emph{et al.}, ``Mind the gap: Mapping wearer--bystander privacy tensions and
+context-adaptive pathways for camera glasses,'' in \emph{Proceedings of the 2026 CHI
+Conference on Human Factors in Computing Systems (CHI~'26)}, ACM, 2025.
+DOI:~10.1145/3772318.3791848.
+
+\bibitem{ref:corbett2024ieee}
+M. Corbett, B. David-John, J. Shang, Y.~C. Hu, and B. Ji, ``Securing bystander privacy
+in mixed reality while protecting the user experience,'' \emph{IEEE Security \&
+Privacy}, vol.~22, no.~1, pp.~33--42, Jan./Feb.~2024.
+DOI:~10.1109/MSEC.2023.3331649.
+
+\bibitem{ref:bystandaria}
+A. M. Jad Al Aaraj, ``BystandARIA: Enabling AR bystander privacy using LEDs,'' in
+\emph{Proceedings of the Twenty-sixth International Symposium on Theory, Algorithmic
+Foundations, and Protocol Design for Mobile Networks and Mobile Computing (MobiHoc
+'25)}, Houston, TX, USA, Oct.~2025, pp.~444--449.
+DOI:~10.1145/3704413.3765296.
+
+\bibitem{ref:ohagan2023}
+M. O'Hagan \emph{et al.}, ``Privacy-enhancing technology and everyday augmented
+reality: Understanding bystanders' varying needs for awareness and consent,''
+\emph{Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous
+Technologies}, vol.~6, no.~4, pp.~1--35, Jan.~2023.
+
+\bibitem{ref:khan2021}
+M. Khan \emph{et al.}, ``Wearable system for personalized and privacy-preserving
+egocentric visual context detection using on-device deep learning,'' in \emph{Adjunct
+Proceedings of the 29th ACM Conference on User Modeling, Adaptation and Personalization
+(UMAP '21)}, 2021.
+
+\bibitem{ref:karakostas2024}
+I. Karakostas \emph{et al.}, ``A real-time wearable AR system for egocentric vision on
+the edge,'' \emph{Virtual Reality}, vol.~28, art.~no.~44, 2024.
+
+\bibitem{ref:bhardwaj2024}
+D. Bhardwaj \emph{et al.}, ``In focus, out of privacy: The wearer's perspective on the
+privacy dilemma of camera glasses,'' in \emph{CHI '24: Proceedings of the 2024 CHI
+Conference on Human Factors in Computing Systems}, 2024.
+
+\bibitem{bystandar}
+M. Corbett, B. David-John, J. Shang, Y.~C. Hu, and B. Ji, ``BystandAR: Protecting
+bystander visual data in augmented reality systems,'' in \emph{Proceedings of the 21st
+Annual International Conference on Mobile Systems, Applications and Services
+(MobiSys~'23)}, ACM, 2023, pp.~370--382.
+DOI:~10.1145/3581791.3596830.
+
+\bibitem{egoblur2023}
+Meta Reality Labs, ``EgoBlur: Privacy-preserving head-mounted egocentric vision,''
+\emph{arXiv preprint arXiv:2308.13093}, 2023.
+
+\bibitem{ref:safear2025}
+R. L. de C. Costa, A. Marto, L. Santos, and C. Rabadão, ``SafeAR:
+Privacy-maintenance in augmented reality applications,'' in \emph{Proceedings of the
+11th European Conference on Service-Oriented and Cloud Computing (ESOCC 2025)},
+Lecture Notes in Computer Science, vol.~15547, pp.~146--151, 2025.
+
+\bibitem{ref:safearunity2025}
+T. F. R. Ribeiro, A. Marto, A. Gonçalves, L. Santos, C. Rabadão, and
+R. L. de C. Costa, ``SafeARUnity: Real-time image processing to enhance privacy
+protection in LBARGs,'' in \emph{Proceedings of the 14th International Conference on
+Videogame Sciences and Arts (VJ~24)}, Communications in Computer and Information
+Science, vol.~2324, pp.~186--200, Springer, 2025.
+DOI:~10.1007/978-3-031-81713-7\_13.
+
+\end{thebibliography}
+\end{singlespace}
+
+\end{document}
+
