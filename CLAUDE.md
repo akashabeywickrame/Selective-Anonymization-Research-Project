@@ -99,6 +99,8 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 ## Rules for working on this project
 
+- **No file names, script names or code identifiers in dissertation text** (owner, 2026-10-21). Examiners don't know the repo, so describe things in plain words (e.g. "a high-resolution timer", "interaction latching").
+
 - **No long dashes in dissertation text** (owner, 2026-10-21): no em dashes (`---`) and no en dashes (`--`). Use a short hyphen for number ranges (`15-25~ms`), and rewrite sentences with commas or full stops instead of dashes.
 
 - **Write dissertation text in first person singular** ("I collected", "my research"), never "the researcher" or "the author". This matches the frozen chapters, which say "my research" (owner, 2026-10-20).
