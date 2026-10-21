@@ -99,6 +99,8 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 ## Rules for working on this project
 
+- **No long dashes in dissertation text** (owner, 2026-10-21): no em dashes (`---`) and no en dashes (`--`). Use a short hyphen for number ranges (`15-25~ms`), and rewrite sentences with commas or full stops instead of dashes.
+
 - **Write dissertation text in first person singular** ("I collected", "my research"), never "the researcher" or "the author". This matches the frozen chapters, which say "my research" (owner, 2026-10-20).
 
 - **Intro, literature review and methodology are FROZEN** (owner, 2026-10-20). Do not edit `methodology.tex` or `Intro & Lit & Methodology.txt`. Write the remaining chapters (`chapters_4_5_6.tex`) so they agree with them: CPU-only, a laptop/desktop CPU benchmark plus a ×3.5 Pi 5 scaling estimate, PSR/IPR, the blanket-blur baseline, and latching framed as favouring IPR.
