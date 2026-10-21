@@ -278,11 +278,12 @@ friend at the same table or playing the same game. A \emph{bystander} is anyone 
 in the wearer's group, such as a stranger walking past or a person in a different
 group. This is broader than the still-frame instruction (actively talking to the
 wearer), and reflects the social reality that the members of the wearer's own group
-are not the people whose privacy is at risk. Three annotators (myself and two
+are not the people whose privacy is at risk. Four annotators (myself and three
 independent annotators) labelled each clip through a simple web page. The final
-label was obtained by majority vote. Two clips were marked undecidable by two of the
-three annotators and were excluded, leaving 102 labelled clips: 67 partners and 35
-bystanders.
+label was obtained by majority vote, with ties resolved as \emph{bystander} (the
+privacy-conservative choice); two ties occurred. Two clips were marked undecidable
+by three of the four annotators and were excluded, leaving 102 labelled clips:
+67 partners and 35 bystanders.
 
 The system's decision for each clip is the decision visible in its output video: a
 face counts as preserved if it was left unblurred in at least half of the frames in
@@ -292,8 +293,8 @@ pipeline.
 
 \paragraph{Agreement.}
 Agreement between annotators was almost perfect (Table~\ref{tab:clip_kappa}). The
-pairwise Cohen's~$\kappa$ ranged from 0.913 to 0.957 and Fleiss'~$\kappa$ across all
-three annotators was 0.942, compared with a mean pairwise $\kappa$ of 0.587 in the
+pairwise Cohen's~$\kappa$ ranged from 0.818 to 0.957 and Fleiss'~$\kappa$ across all
+four annotators was 0.903, compared with a mean pairwise $\kappa$ of 0.587 in the
 still-frame study. Seeing movement and hearing speech therefore made the labelling
 task far more reliable.
 
@@ -310,9 +311,12 @@ myself.}
 \midrule
 A and B & 0.957 & 98.0\% \\
 A and C & 0.913 & 96.1\% \\
+A and D & 0.818 & 92.1\% \\
 B and C & 0.956 & 98.0\% \\
+B and D & 0.861 & 94.1\% \\
+C and D & 0.905 & 96.0\% \\
 \midrule
-\textbf{All three (Fleiss' $\kappa$)} & \textbf{0.942} & \\
+\textbf{All four (Fleiss' $\kappa$)} & \textbf{0.903} & \\
 \bottomrule
 \end{tabular}
 \end{singlespace}
@@ -634,7 +638,7 @@ before the head-pose and speaking checks are considered. In the
 evaluated sample, the full system therefore behaved as a privacy-first classifier.
 
 The larger video-clip evaluation confirms this pattern with much stronger evidence.
-With almost perfect agreement between annotators ($\kappa = 0.942$) and 102 clips,
+With almost perfect agreement between four annotators ($\kappa = 0.903$) and 102 clips,
 the live Phase~2b system blurred 94.29\% of bystanders and preserved 56.72\% of
 partners, and when it preserved a face it was correct 95\% of the time. The
 privacy-first behaviour of the live system is therefore a stable property rather
@@ -815,7 +819,7 @@ recognises a partner correctly but too late. The offline second pass addresses b
 causes directly, and recovered 15 of the 29. Of the two bystanders the live system
 preserved, one was left unblurred for exactly half of the clip, the threshold of the
 per-clip decision rule, and the other was a person close to the wearer in an
-interaction clip.
+interaction clip, on whom the four annotators were evenly split.
 
 \subsection{Limitations}
 \label{sec:disc_limitations}
@@ -835,10 +839,10 @@ environments would provide a more robust assessment of generalisation.
 
 \textbf{Annotation scale and protocol.} I assigned the Phase~2a ground truth
 alone. Phase~2b was evaluated twice with blind protocols: on 29 faces from still
-frames by four annotators (mean $\kappa = 0.587$), and on 102 video clips by three
-annotators (Fleiss' $\kappa = 0.942$). I was one of the annotators in both studies
+frames by four annotators (mean $\kappa = 0.587$), and on 102 video clips by four
+annotators (Fleiss' $\kappa = 0.903$). I was one of the annotators in both studies
 and was familiar with the system design, although my labels agreed with the
-independent annotators' labels in 96-98\% of the video clips. The two Phase~2b
+independent annotators' labels in 92-98\% of the video clips. The two Phase~2b
 studies also used different partner definitions (actively talking to the wearer,
 and member of the wearer's group). Because Phase~2a and Phase~2b were evaluated on
 different samples, differences between them are indicative rather than conclusive.
@@ -900,7 +904,7 @@ decision function with temporal hysteresis and interaction latching, achieving P
 against a ground-truth dataset of 66 unique face tracks from 21 egocentric video clips.
 With landmark cues enabled (Phase~2b), a blind four-annotator evaluation of 29 faces
 gave PSR = 100\% and IPR = 57.14\%, and a larger blind evaluation of 102 video
-clips with almost perfect annotator agreement ($\kappa = 0.942$) confirmed this
+clips by four annotators with almost perfect agreement ($\kappa = 0.903$) confirmed this
 with PSR = 94.29\% and IPR = 56.72\%. For recorded video, an offline second pass
 that applies the latch retroactively and recognises the members of the wearer's
 group raised IPR to 79.10\% at PSR = 91.43\% (F$_1$ = 86.18\%).

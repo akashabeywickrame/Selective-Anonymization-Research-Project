@@ -1,7 +1,7 @@
 subset,metric,value
-all,annotators,3
-all,fleiss_kappa,0.942
-all,ties,0
+all,annotators,4
+all,fleiss_kappa,0.903
+all,ties,2
 all,n,102
 all,tp,38
 all,fn,29

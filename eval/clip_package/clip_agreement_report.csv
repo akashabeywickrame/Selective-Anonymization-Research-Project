@@ -1,4 +1,7 @@
 pair,kappa,agreement_pct,n_shared
 akash vs janindu,0.957,98.0,102
+akash vs udari,0.818,92.1,101
 akash vs yushmantha,0.913,96.1,102
+janindu vs udari,0.861,94.1,101
 janindu vs yushmantha,0.956,98.0,102
+udari vs yushmantha,0.905,96.0,101
