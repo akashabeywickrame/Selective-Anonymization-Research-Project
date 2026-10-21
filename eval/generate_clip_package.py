@@ -241,13 +241,16 @@ Please turn the SOUND ON.
 For the face in the yellow box, decide:
 
   p  =  Interaction partner
-        This person is talking WITH the camera wearer during the clip
-        (speaking to them, listening and responding, facing them in
-        conversation).
+        This person is part of the camera wearer's group or conversation.
+        That includes someone talking to the camera wearer, AND someone who
+        is with them but not speaking right now, for example a friend
+        sitting at the same table, playing the same game, or listening to
+        the conversation.
 
   b  =  Bystander
-        This person is NOT interacting with the camera wearer. They may be
-        nearby, walking past, in the background, or talking to someone else.
+        This person is NOT part of the camera wearer's group. For example a
+        stranger walking past, someone in the background, or someone in a
+        different group talking to other people.
 
 If you genuinely cannot tell, leave it blank ("Can't tell").
 
@@ -290,10 +293,16 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8
 kbd{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}
 </style></head><body><main>
 <div class="card">
-<h1 style="margin:0 0 8px;font-size:22px">Who is the camera wearer talking with?</h1>
+<h1 style="margin:0 0 8px;font-size:22px">Is this person with the camera wearer?</h1>
 <p style="margin:0 0 8px">Each clip is filmed by a camera worn by a person. <b>One face has a yellow box.</b>
-Turn the <b>sound on</b>. Decide whether that person is an <b>interaction partner</b> (talking with the
-camera wearer) or a <b>bystander</b> (not interacting with them). Judge only what happens in the clip.</p>
+Turn the <b>sound on</b>. Decide whether that person is an <b>interaction partner</b> or a <b>bystander</b>.
+Judge only what happens in the clip.</p>
+<ul style="margin:0 0 8px;padding-left:20px">
+<li><b>Interaction partner:</b> part of the camera wearer's group or conversation. This includes someone
+talking to the camera wearer <i>and</i> someone who is with them but not speaking right now, such as a
+friend at the same table, playing the same game, or listening.</li>
+<li><b>Bystander:</b> not part of the camera wearer's group, such as a stranger walking past, someone in the
+background, or someone in a different group.</li></ul>
 <p class="mut" style="margin:0">Keys: <kbd>P</kbd> partner &middot; <kbd>B</kbd> bystander &middot; <kbd>U</kbd> can't tell &middot;
 <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> previous/next &middot; <kbd>R</kbd> replay. Your progress is saved in this browser.</p>
 <div class="row" style="margin-top:12px"><label for="name">Your name</label>
@@ -315,7 +324,7 @@ camera wearer) or a <b>bystander</b> (not interacting with them). Judge only wha
 </div></main>
 <script>
 const CLIPS = __CLIPS__;
-const KEY = "clip-annotation-v1";
+const KEY = "clip-annotation-v2";
 let st = {i:0, name:"", lab:{}};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) st = Object.assign(st, s); } catch(e) {}
 const $ = id => document.getElementById(id);
@@ -372,7 +381,18 @@ show();
 # Main
 # =============================================================================
 
+def write_text_only():
+    """Rewrite the instructions and labelling page for the existing clips."""
+    ids = [r["clip_id"] for r in csv.DictReader(open(MAP_FILE, newline=""))]
+    (PKG_DIR / "INSTRUCTIONS.txt").write_text(INSTRUCTIONS_TXT, encoding="ascii")
+    _write_html(ids)
+    print(f"[ClipPackage] Rewrote INSTRUCTIONS.txt and annotate.html for {len(ids)} clips")
+
+
 def main():
+    if "--text-only" in sys.argv:
+        write_text_only()
+        return
     CLIPS.mkdir(parents=True, exist_ok=True)
     print("[ClipPackage] Loading tracking log...")
     tracks = _load_tracks()
