@@ -111,6 +111,13 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
    - **Broken outputs found (2026-10-21):** `output/interaction/video3_*.mp4` and `video15_*.mp4` had no moov atom (an interrupted run; main.py's resume logic skipped them because the files existed). Their logs are complete. **Both restored 2026-10-21** with `python -m utils.restore_outputs_from_log interaction video3.mp4` (and video15.mp4), which re-renders from the LOGGED decisions (don't use rerender_from_log.py: it re-classifies without landmarks and mixes up categories).
 6. Optional: commit the work. Many files are still untracked (see `git status`). Don't commit LaTeX build files (`*.aux`, `*.log`, `*.nav`, `*.out`, `*.snm`, `*.toc`) or large zips/videos.
 
+## Retroactive latch (added 2026-10-22, owner: "once an interactor, always an interactor")
+
+- The live latch (`INTERACT_LATCH`) only works forward: frames BEFORE confirmation stay blurred. 10 of the 29 clip-study misses were partners confirmed later in the same video.
+- `INTERACT_RETRO_LATCH = True` in config.py plus `python -m utils.render_retro_latch <cat> <video>` / `--all`: an offline second pass that preserves a confirmed partner for its whole track. It reads the log and writes `output/<cat>/<video>_selective_retro.mp4`. main.py and all reported results are unchanged. It only works on recorded video (it needs the future frames).
+- Clip-study effect (same 102 labels): TP 48, FN 19, FP 3, TN 32 → **PSR 91.43% [77.6-97.0], IPR 71.64% [59.9-81.0], Precision 94.12%, F1 81.36%** (vs forward latch: PSR 94.29, IPR 56.72, F1 71.03). One new leak: clip_050 (interaction/video13). Verified on video10's output: all 3 missed partners are fully visible.
+- Caveat for the write-up: this was designed after seeing the clip-study errors, so it's evaluated on the same labels. Present it as a post-hoc extension, not as the main result.
+
 ## Rules for working on this project
 
 - **No file names, script names or code identifiers in dissertation text** (owner, 2026-10-21). Examiners don't know the repo, so describe things in plain words (e.g. "a high-resolution timer", "interaction latching").
