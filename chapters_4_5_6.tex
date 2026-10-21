@@ -281,9 +281,11 @@ wearer), and reflects the social reality that the members of the wearer's own gr
 are not the people whose privacy is at risk. Four annotators (myself and three
 independent annotators) labelled each clip through a simple web page. The final
 label was obtained by majority vote, with ties resolved as \emph{bystander} (the
-privacy-conservative choice); two ties occurred. Two clips were marked undecidable
-by three of the four annotators and were excluded, leaving 102 labelled clips:
-67 partners and 35 bystanders.
+privacy-conservative choice); two ties occurred. In two clips the boxed region was
+not a person at all but a false detection by the face detector: a face printed on a
+magazine cover and a product package on a shop shelf. Most annotators left these
+clips unlabelled and I excluded them, leaving 102 labelled clips: 67 partners and 35
+bystanders.
 
 The system's decision for each clip is the decision visible in its output video: a
 face counts as preserved if it was left unblurred in at least half of the frames in
@@ -820,6 +822,17 @@ causes directly, and recovered 15 of the 29. Of the two bystanders the live syst
 preserved, one was left unblurred for exactly half of the clip, the threshold of the
 per-clip decision rule, and the other was a person close to the wearer in an
 interaction clip, on whom the four annotators were evenly split.
+
+The video-clip study also gives a direct view of detector errors. Of the 104
+sampled tracks, two (1.9\%) were not people: a face printed on a magazine cover,
+which the system blurred, and a product package on a shop shelf, which the system
+classified as a partner and left unblurred. Neither error affects privacy, since no
+real person is involved, but the second shows that the interaction cues are applied
+to any detection that persists in the centre of the view. This detection had a
+median confidence of only 0.53, just above the detection threshold of 0.45, and the
+landmark extractor found a face in only 1 of its 73 frames. Requiring a higher
+detection confidence, or successful landmark extraction, before a track can be
+confirmed as a partner would filter out such non-face detections.
 
 \subsection{Limitations}
 \label{sec:disc_limitations}
