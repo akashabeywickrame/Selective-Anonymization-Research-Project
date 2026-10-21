@@ -9,7 +9,8 @@
 # For recorded video the whole track is known, so this second pass preserves a
 # confirmed partner for every frame of its track, including the frames before
 # confirmation. It reads the decisions already recorded in the tracking log
-# (no re-detection) and writes:
+# (no re-detection). With FRIEND_GROUP_ENABLED it also preserves people who stay
+# in view alongside a confirmed partner (friends who are not speaking). Writes:
 #     output/<category>/<video>_selective_retro.mp4
 #
 # Usage:
@@ -24,15 +25,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import (
     INTERACTION_INPUT_DIR, BYSTANDER_INPUT_DIR,
     INTERACTION_OUTPUT_DIR, BYSTANDER_OUTPUT_DIR, INTERACT_RETRO_LATCH,
+    FRIEND_GROUP_ENABLED, FRIEND_MIN_SECONDS, FRIEND_MIN_COPRESENCE,
 )
+from collections import defaultdict
 from core.anonymizer import SelectiveAnonymizer
 from utils.restore_outputs_from_log import load_decisions, _writer
 from utils.video_loader import VideoLoader
 
 
-def apply_retro_latch(decisions):
-    """Mark every frame of a track as interacting if the track was ever confirmed."""
+def find_friends(decisions, partners, fps):
+    """Tracks that stay in view long enough while a confirmed partner is present."""
+    frames = defaultdict(set)
+    for fi, rows in decisions.items():
+        for d in rows:
+            frames[d["track_id"]].add(fi)
+    partner_frames = set().union(*(frames[t] for t in partners)) if partners else set()
+    friends = set()
+    for tid, f in frames.items():
+        if tid in partners or len(f) / fps < FRIEND_MIN_SECONDS:
+            continue
+        if len(f & partner_frames) / len(f) >= FRIEND_MIN_COPRESENCE:
+            friends.add(tid)
+    return friends
+
+
+def apply_retro_latch(decisions, fps=30.0):
+    """Mark every frame of a track as interacting if the track was ever confirmed
+    (or, with the friend-group rule, belongs to the wearer's group)."""
     partners = {d["track_id"] for rows in decisions.values() for d in rows if d["interacting"]}
+    if FRIEND_GROUP_ENABLED:
+        partners |= find_friends(decisions, partners, fps)
     for rows in decisions.values():
         for d in rows:
             if d["track_id"] in partners:
@@ -47,12 +69,11 @@ def render(category, video):
     if not decisions:
         print(f"[Retro] no log rows for {category}/{video}, skipping")
         return
-    partners = apply_retro_latch(decisions) if INTERACT_RETRO_LATCH else set()
-
     out = out_dir / f"{Path(video).stem}_selective_retro.mp4"
     tmp = out.with_suffix(".rendering.mp4")
     selective = SelectiveAnonymizer()
     with VideoLoader(src_dir / video) as loader:
+        partners = apply_retro_latch(decisions, loader.fps) if INTERACT_RETRO_LATCH else set()
         w, h = loader.frame_size
         wr = _writer(tmp, w, h, loader.fps)
         n = 0

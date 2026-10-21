@@ -103,6 +103,15 @@ INTERACT_EXIT_FRAMES      = 10      # (only used when INTERACT_LATCH = False)
 # (main.py) is unchanged and reported results do not use it.
 INTERACT_RETRO_LATCH      = True
 
+# Friend group (OFFLINE, applied with the retroactive latch): a person who stays
+# in view for at least FRIEND_MIN_SECONDS, and is on screen together with a
+# confirmed partner for at least FRIEND_MIN_COPRESENCE of their frames, is treated
+# as part of the wearer's group (e.g. friends at the same table who are not
+# speaking) and preserved too. Strangers passing by are rarely in view that long.
+FRIEND_GROUP_ENABLED      = True
+FRIEND_MIN_SECONDS        = 10.0
+FRIEND_MIN_COPRESENCE     = 0.5
+
 # ── Anonymization ────────────────────────────────────────────────────────────
 ANON_METHOD        = "blur"         # "blur" | "pixelate"
 ANON_BLUR_KERNEL   = 51             # Gaussian kernel size (odd number)
