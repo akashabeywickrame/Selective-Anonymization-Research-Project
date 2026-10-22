@@ -47,7 +47,7 @@ clip_045,interaction,video14.mp4,51,1,0
 clip_046,interaction,video4.mp4,13,1,1
 clip_047,bystander,video3.mp4,20,0,0
 clip_048,interaction,video11.mp4,36,1,0
-clip_049,interaction,video9.mp4,27,0,1
+clip_049,interaction,video9.mp4,27,1,1
 clip_050,interaction,video13.mp4,455,0,0
 clip_051,interaction,video2.mp4,116,1,0
 clip_052,interaction,video2.mp4,107,1,1
@@ -75,7 +75,7 @@ clip_075,interaction,video8.mp4,49,1,1
 clip_076,interaction,video9.mp4,56,1,1
 clip_077,interaction,video10.mp4,52,1,1
 clip_078,interaction,video6.mp4,306,0,0
-clip_079,interaction,video13.mp4,31,0,0
+clip_079,interaction,video13.mp4,31,1,0
 clip_080,interaction,video6.mp4,21,0,0
 clip_081,interaction,video7.mp4,127,1,1
 clip_082,interaction,video5.mp4,527,1,1
