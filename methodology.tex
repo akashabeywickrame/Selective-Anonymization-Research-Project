@@ -1,0 +1,393 @@
+% ==============================================================================
+%  CHAPTER 3 — METHODOLOGY
+%  Paste this block into your main document immediately before \begin{thebibliography}
+% ==============================================================================
+
+\section{Methodology}
+
+This chapter presents the design and implementation of the proposed context-aware
+privacy framework. The framework is structured as a five-stage sequential pipeline that
+processes each frame of an egocentric video stream: face detection, multi-face tracking,
+interaction cue extraction, context-aware classification, and selective anonymization.
+Each stage is motivated by the design constraints established in the literature review:
+CPU-only edge deployment, no biometric face recognition, and a privacy-safe
+``bystander by default'' classification policy. The chapter concludes with a description
+of the blanket-blurring baseline used for comparative evaluation and the metrics used to
+assess performance.
+
+\subsection{System Architecture}
+
+The proposed system is organised as a modular, single-pass pipeline that processes
+one video frame at a time. Figure~\ref{fig:pipeline} illustrates the data flow. A raw
+BGR frame is passed sequentially through the detection, tracking, cue extraction,
+classification, and anonymization stages; the output is an anonymized frame in which
+only bystander faces are blurred, while interaction partner faces remain unmodified.
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{
+    \begin{minipage}{0.9\linewidth}
+      \centering
+      \vspace{4pt}
+      \texttt{Frame} $\rightarrow$
+      \textbf{Detection} $\rightarrow$
+      \textbf{Tracking} $\rightarrow$
+      \textbf{Cue Extraction} $\rightarrow$
+      \textbf{Classification} $\rightarrow$
+      \textbf{Anonymization} $\rightarrow$
+      \texttt{Output}
+      \vspace{4pt}
+    \end{minipage}
+  }
+  \caption{Overview of the five-stage egocentric privacy pipeline.}
+  \label{fig:pipeline}
+\end{figure}
+
+A key architectural property is the separation of \emph{identity management} from
+\emph{appearance analysis}. The tracking stage assigns and maintains stable numeric
+identifiers for each face across frames; the cue extraction stage operates on the
+current frame content given those identifiers. This separation means that no biometric
+embedding or face recognition model is required at any stage. The numeric identifiers
+are session-scoped and ephemeral, consistent with the Data Minimization principle
+discussed in Section~2.6.
+
+All components are implemented in Python 3.11 using OpenCV 4.x for frame I/O and
+image operations, Ultralytics YOLOv8 for face detection, a custom SORT implementation
+for tracking, and MediaPipe 0.10 for facial landmark extraction. The pipeline is
+designed to execute on a single CPU core with no GPU or NPU dependency, targeting the
+Raspberry Pi~5 (ARM Cortex-A76, 2.4~GHz) as the primary edge deployment hardware.
+
+\subsection{Face Detection}
+
+The first stage detects all faces present in each frame and produces axis-aligned
+bounding boxes and detection confidence scores. Based on the empirical comparison
+described in Section~2.4, YOLOv8n-face was selected as the detection backbone.
+YOLOv8n-face is the nano variant of the YOLOv8 architecture fine-tuned on face
+detection datasets, with a model weight file of approximately 6~MB. It operates as a
+single-shot detector: the full frame is resized to a fixed input resolution of
+$640 \times 640$ pixels, passed through the network, and non-maximum suppression (NMS)
+is applied to the raw anchor outputs to produce the final set of detections.
+
+A minimum confidence threshold of $\tau_{\mathrm{det}} = 0.45$ and an NMS IoU threshold
+of $\tau_{\mathrm{NMS}} = 0.45$ were selected empirically to suppress spurious low-confidence
+detections without discarding valid faces in partially occluded or poorly lit conditions.
+A maximum of 20 simultaneous faces are tracked per frame, a limit that comfortably
+exceeds the face count expected in typical egocentric interaction scenarios.
+
+\subsection{Multi-Face Tracking}
+
+The tracking stage associates the set of detections from the current frame with the set
+of active tracks from the previous frame, maintaining a stable numeric \texttt{track\_id}
+for each face across consecutive frames. Stable identities are essential for the
+interaction cue extraction stage, which accumulates temporal evidence such as mouth
+aspect ratio variance over a 30-frame window; without tracking, each frame's detections
+would be anonymous and no per-person history could be maintained.
+
+SORT (Simple Online and Realtime Tracking) \cite{sort2016} is used for this purpose. SORT
+models each face's bounding box trajectory as a linear Kalman filter and uses the
+Hungarian algorithm to solve the bipartite matching problem between the predicted
+positions of existing tracks and the new detections. The IoU between predicted and
+detected bounding boxes serves as the matching cost. Tracks that fail to receive a
+matching detection are retained in a ``lost'' state for up to 90 frames (3~seconds at
+30~fps) before being discarded, which prevents identity switches when a face is
+temporarily occluded. A track is reported as confirmed only after receiving at least 3
+consecutive detections, which prevents transient false detections from entering the
+classification stage.
+
+SORT is a motion-only tracker: it requires no face embedding, identity descriptor, or
+appearance model. This is a critical property for the present system, as any
+re-identification model that encodes facial appearance would constitute biometric
+processing. The Kalman filter parameters use velocity-and-position state estimation with
+a constant-velocity motion model, which is adequate for the relatively smooth,
+continuous motion of faces in egocentric video at normal walking pace.
+
+\subsection{Interaction Cue Extraction}
+
+The interaction cue extraction stage computes four scalar features for each tracked face
+that collectively characterise whether the face belongs to an active interaction partner
+or a background bystander. The four cues are divided into two groups based on the
+information they require.
+
+\subsubsection*{Phase 2a Cues: Bounding-Box Geometry}
+
+The first two cues are derived entirely from the bounding box produced by the detector
+and require no additional computation. They exploit the center bias of egocentric video:
+the camera wearer naturally orients their head toward their interlocutor, so an active
+conversation partner's face tends to be large and centrally located in the frame.
+
+\textbf{Proximity} (area ratio). Let $[x_1, y_1, x_2, y_2]$ denote the bounding box of
+a tracked face, and let $W \times H$ be the frame dimensions. The face area ratio is
+defined as:
+\begin{equation}
+  r_{\mathrm{area}} = \frac{(x_2 - x_1)(y_2 - y_1)}{W \cdot H}
+  \label{eq:area_ratio}
+\end{equation}
+$r_{\mathrm{area}}$ captures how much of the frame the face occupies. A close conversation
+partner produces values in the range $0.02$--$0.08$; a distant bystander produces
+values below $0.003$. A threshold of $\tau_{\mathrm{area}} = 0.012$ separates these two
+regimes, calibrated from the empirical distribution of per-track maximum area ratios
+observed across the evaluation videos.
+
+\textbf{Centrality} (center distance). The normalized distance of the face center from
+the optical center of the frame is defined as:
+\begin{equation}
+  d_{\mathrm{center}} = \frac{\sqrt{(\bar{x} - W/2)^2 + (\bar{y} - H/2)^2}}
+                             {\sqrt{(W/2)^2 + (H/2)^2}}
+  \label{eq:center_dist}
+\end{equation}
+where $\bar{x} = (x_1 + x_2)/2$ and $\bar{y} = (y_1 + y_2)/2$ are the face center
+coordinates. The denominator normalizes by the half-diagonal of the frame so that
+$d_{\mathrm{center}} = 0$ at the frame center and $d_{\mathrm{center}} \approx 1$ at the
+corners. A threshold of $\tau_{\mathrm{center}} = 0.45$ is used: faces within 45\% of
+the frame center along the normalized diagonal are considered sufficiently central.
+
+\subsubsection*{Phase 2b Cues: Facial Landmark Analysis}
+
+The second two cues require the positions of specific facial landmarks, which are
+extracted using MediaPipe Face Mesh. For each tracked face, the bounding box produced
+by SORT is padded by 15\% on each side to ensure that the chin and forehead are
+captured, and the resulting crop is passed to MediaPipe Face Mesh in
+\texttt{static\_image\_mode} (i.e., each crop is treated independently, with no temporal
+state maintained by Face Mesh itself). Face Mesh returns a set of 468 3D landmark
+coordinates normalized to the crop dimensions. If Face Mesh fails to detect a face
+within the crop, the Phase 2b cues are set to \texttt{None} and the classification
+stage reverts to Phase 2a cues only for that track in that frame.
+
+\textbf{Head-pose yaw} (orientation cue). Head-pose estimation is performed by solving
+the Perspective-$n$-Point (PnP) problem \cite{pnp1995} using six key facial landmarks
+whose positions in a canonical 3D face model are known: the nose tip, chin, left and
+right eye outer corners, and left and right mouth corners (MediaPipe landmark indices
+4, 152, 33, 263, 61, and 291 respectively). Let
+$\mathbf{P}_i^{3D} \in \mathbb{R}^3$ denote the $i$-th 3D model point and
+$\mathbf{p}_i^{2D} \in \mathbb{R}^2$ its corresponding image point in the crop.
+The camera intrinsic matrix is approximated as:
+\begin{equation}
+  K = \begin{bmatrix} f & 0 & c_x \\ 0 & f & c_y \\ 0 & 0 & 1 \end{bmatrix},
+  \quad f = W_{\mathrm{crop}}, \quad c_x = W_{\mathrm{crop}}/2, \quad c_y = H_{\mathrm{crop}}/2
+  \label{eq:camera_matrix}
+\end{equation}
+where $W_{\mathrm{crop}} \times H_{\mathrm{crop}}$ are the crop dimensions and $f$ is
+the approximate focal length set equal to the crop width. The iterative PnP solver
+(\texttt{SOLVEPNP\_ITERATIVE}) minimizes the sum of squared reprojection errors:
+\begin{equation}
+  \min_{\mathbf{r}, \mathbf{t}} \sum_{i=1}^{6}
+  \left\| \mathbf{p}_i^{2D} - \pi\!\left(K,\, \mathbf{r},\, \mathbf{t},\, \mathbf{P}_i^{3D}\right) \right\|^2
+  \label{eq:pnp}
+\end{equation}
+where $\pi(\cdot)$ denotes the perspective projection. The resulting rotation vector
+$\mathbf{r}$ is converted to a $3\times3$ rotation matrix $R$ via the Rodrigues formula,
+and the RQ decomposition of $R$ yields the Euler angles $(\alpha, \beta, \gamma)$
+representing pitch, yaw, and roll respectively. The yaw angle $\beta$ (rotation about
+the vertical axis) is used as the orientation cue:
+\begin{equation}
+  \theta_{\mathrm{yaw}} = \beta \quad [\text{degrees}]
+  \label{eq:yaw}
+\end{equation}
+A face with $|\theta_{\mathrm{yaw}}| > \tau_{\mathrm{yaw}} = 40^\circ$ is considered to
+be looking away from the camera wearer and is therefore classified as a bystander
+regardless of proximity or centrality (hard veto).
+
+\textbf{Mouth Aspect Ratio} (V-VAD cue). The Mouth Aspect Ratio (MAR) quantifies the
+degree to which the mouth is open and is used as a visual proxy for speech activity.
+Using the inner lip landmarks from MediaPipe Face Mesh, three upper inner lip points
+(indices 82, 13, 312) and three lower inner lip points (indices 87, 14, 317) are
+averaged to obtain representative upper ($\bar{u}$) and lower ($\bar{l}$) lip
+positions. The left and right inner lip corners are taken from indices 78 and 308. The
+MAR is then:
+\begin{equation}
+  \mathrm{MAR} = \frac{\lVert \bar{u} - \bar{l} \rVert}
+                      {\lVert p_{78} - p_{308} \rVert}
+  \label{eq:mar}
+\end{equation}
+where $\lVert \cdot \rVert$ denotes the Euclidean norm. MAR approaches zero when the
+mouth is closed; values above approximately 0.08 correspond to a mouth open sufficiently
+to indicate speech.
+
+\subsection{Context-Aware Classification}
+
+The classification stage maps the four cues computed for a given tracked face in a given
+frame to a binary label: \textsc{Interactor} (preserve) or \textsc{Bystander}
+(anonymize). The design follows three principles: (i) \emph{bystander by default}, so
+that uncertain cases are treated as bystanders to maximise privacy protection; (ii)
+\emph{temporal hysteresis}, so that a single noisy frame cannot flip a face's label;
+and (iii) \emph{landmark cues as veto and boost}, so that the orientation and V-VAD cues
+can strengthen or override the geometric Phase 2a decision.
+
+\subsubsection*{Per-Track State}
+
+Because SORT provides stable \texttt{track\_id} values, the classifier maintains a
+stateful record for each active track containing:
+\begin{itemize}
+  \item \texttt{interacting}: the current committed binary label (initially \textsc{Bystander});
+  \item \texttt{enter\_streak}: the count of consecutive frames in which the instantaneous
+        cues indicate \textsc{Interactor};
+  \item \texttt{exit\_streak}: the count of consecutive frames in which the cues indicate
+        \textsc{Bystander};
+  \item \texttt{mar\_history}: a fixed-length deque of the $N_w = 30$ most recent MAR
+        values for this track, forming the V-VAD rolling window.
+\end{itemize}
+
+\subsubsection*{Instantaneous Decision Function}
+
+For each frame, the instantaneous decision function $f$ maps the current cue vector to a
+tentative label. The function is evaluated in the following priority order:
+
+\begin{enumerate}
+  \item \textbf{Yaw veto.} If landmark data is available and
+        $|\theta_{\mathrm{yaw}}| > 40^\circ$, return \textsc{Bystander} immediately.
+        A face turned significantly away from the camera cannot be in direct face-to-face
+        interaction with the wearer.
+
+  \item \textbf{Proximity and centrality.} Evaluate the Phase 2a rule:
+        \begin{equation}
+          f_{\mathrm{geo}} = \bigl[r_{\mathrm{area}} \geq \tau_{\mathrm{area}}\bigr]
+                             \wedge
+                             \bigl[d_{\mathrm{center}} \leq \tau_{\mathrm{center}}\bigr]
+          \label{eq:geo_rule}
+        \end{equation}
+        If $f_{\mathrm{geo}}$ is true, return \textsc{Interactor} (subject to V-VAD
+        boost below).
+
+  \item \textbf{V-VAD boost.} The V-VAD score is computed as the fraction of frames in
+        the rolling window with $\mathrm{MAR} \geq \tau_{\mathrm{MAR}} = 0.08$:
+        \begin{equation}
+          s_{\mathrm{vad}} = \frac{1}{|\mathcal{W}|} \sum_{m \in \mathcal{W}}
+                             \mathbf{1}\!\left[m \geq \tau_{\mathrm{MAR}}\right]
+          \label{eq:vvad}
+        \end{equation}
+        where $\mathcal{W}$ is the set of MAR values currently in the history deque.
+        If $s_{\mathrm{vad}} \geq \tau_{\mathrm{vad}} = 0.30$ and
+        $r_{\mathrm{area}} \geq \tau_{\mathrm{area}}$, the face is classified as
+        \textsc{Interactor} even if $d_{\mathrm{center}} > \tau_{\mathrm{center}}$
+        (with the centrality threshold relaxed to $1.2 \cdot \tau_{\mathrm{center}}$).
+        This handles the case where an active conversation partner has drifted slightly
+        off the optical center during animated speech.
+
+  \item \textbf{Default.} If none of the above conditions is satisfied, return
+        \textsc{Bystander}.
+\end{enumerate}
+
+\subsubsection*{Temporal Hysteresis and Latching}
+
+The instantaneous label returned by $f$ updates the enter or exit streak for the track.
+A label transition from \textsc{Bystander} to \textsc{Interactor} is committed only
+when the enter streak reaches $\tau_{\mathrm{enter}} = 2$ consecutive frames. A special
+case applies: if $r_{\mathrm{area}} \geq 0.04$ (a face covering at least 4\% of the
+frame), the transition is committed immediately regardless of the streak, since such
+proximity is an unambiguous indicator of direct face-to-face engagement.
+
+Once a track has been committed as \textsc{Interactor}, the label is \emph{latched}: it
+is not reverted to \textsc{Bystander} even if the instantaneous cues subsequently fail.
+This design choice prevents flickering between labels when a conversation partner
+momentarily looks away or is partially occluded, and is consistent with the observation
+that once a direct interaction has been established the wearer's engagement partner
+remains socially present throughout the interaction. Latching represents a deliberate
+trade-off in favour of interaction preservation rate (IPR) over privacy success rate
+(PSR), reflecting the system's utility objective.
+
+\subsection{Selective Anonymization}
+
+For each frame, all faces classified as \textsc{Bystander} are anonymized by applying
+a Gaussian blur to the face region. The bounding box is first expanded by a padding
+factor of 10\% on each side to ensure that hair and ears are covered in addition to the
+central face region. A Gaussian kernel of size $51 \times 51$ pixels with a
+correspondingly large standard deviation is applied to the padded region, which
+produces a smooth, visually consistent blur that eliminates identifiable facial features
+while preserving the presence and approximate shape of the person in the scene. Faces
+classified as \textsc{Interactor} are passed to the output frame unmodified.
+
+The selective output is produced alongside two reference streams: a \emph{blanket-blur}
+stream in which all detected faces are blurred regardless of classification (the
+baseline), and a \emph{debug} stream in which bounding boxes are annotated in green
+(\textsc{Interactor}) or red (\textsc{Bystander}) to facilitate visual inspection of
+the classification decisions.
+
+\subsection{Baseline: Blanket-Blurring}
+
+The baseline system applies identical Gaussian blur to every detected face in every frame,
+making no use of the interaction cues. This corresponds to the current state-of-the-art
+approach used in applications such as Google Street View and EgoBlur. The baseline uses
+the same YOLOv8n-face detector and SORT tracker as the proposed system, ensuring that any
+performance difference is attributable solely to the selective classification layer rather
+than to differences in the underlying detection quality.
+
+The proposed system is designed to outperform the baseline on two dimensions: the
+Interaction Preservation Rate, which the baseline degrades to zero (all partners are
+blurred), and the per-frame computational load, since selective anonymization skips the
+Gaussian convolution for faces classified as \textsc{Interactor}.
+
+\subsection{Evaluation Metrics}
+
+The performance of the proposed system is evaluated using two primary task-level metrics,
+supplemented by computational efficiency metrics.
+
+\textbf{Privacy Success Rate (PSR)} measures the proportion of bystander faces that
+are correctly anonymized:
+\begin{equation}
+  \mathrm{PSR} = \frac{TP_B}{TP_B + FN_B}
+  \label{eq:psr}
+\end{equation}
+where $TP_B$ is the number of bystander face-frames correctly blurred and $FN_B$ is the
+number of bystander face-frames incorrectly left unblurred. PSR captures the system's
+ability to protect bystander privacy.
+
+\textbf{Interaction Preservation Rate (IPR)} measures the proportion of interaction
+partner faces that are correctly left unblurred:
+\begin{equation}
+  \mathrm{IPR} = \frac{TP_I}{TP_I + FN_I}
+  \label{eq:ipr}
+\end{equation}
+where $TP_I$ is the number of partner face-frames correctly preserved and $FN_I$ is the
+number of partner face-frames incorrectly blurred. IPR captures the system's utility
+preservation.
+
+Ground-truth labels (bystander or interaction partner, per face per frame) are
+established by manual annotation of the evaluation video clips using a purpose-built
+annotation tool. Both metrics are reported across all evaluation clips and separately for
+the bystander-only and interaction video subsets, enabling analysis of false-positive
+(over-anonymization) and false-negative (under-anonymization) failure modes.
+
+\textbf{Computational efficiency} is reported as average frames per second (FPS) over
+the full evaluation set, and as per-stage latency (in milliseconds) measured using
+high-resolution wall-clock timing (\texttt{time.perf\_counter}). These measurements are
+conducted on a desktop CPU to establish a baseline, with Raspberry Pi~5 performance
+estimated by applying a hardware scaling factor derived from published ARM
+Cortex-A76 inference benchmarks.
+
+Table~\ref{tab:params} summarises the key threshold parameters used in the classification
+stage.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification stage threshold parameters and their values.}
+\label{tab:params}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} & \textbf{Cue} \\
+\midrule
+Minimum area ratio       & $\tau_{\mathrm{area}}$    & $0.012$   & Proximity \\
+Maximum center distance  & $\tau_{\mathrm{center}}$  & $0.45$    & Centrality \\
+Instant-partner area     & --                         & $0.040$   & Proximity \\
+Enter streak             & $\tau_{\mathrm{enter}}$   & $2$ frames & Hysteresis \\
+Maximum yaw              & $\tau_{\mathrm{yaw}}$     & $40^\circ$ & Orientation \\
+MAR threshold            & $\tau_{\mathrm{MAR}}$     & $0.08$    & V-VAD \\
+V-VAD window             & $N_w$                     & $30$ frames & V-VAD \\
+V-VAD active ratio       & $\tau_{\mathrm{vad}}$     & $0.30$    & V-VAD \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ── Add these to \begin{thebibliography} in your main document ─────────────────
+
+% \bibitem{sort2016}
+% A. Bewley, Z. Ge, L. Ott, F. Ramos, and B. Upcroft, ``Simple online and realtime
+% tracking,'' in \emph{2016 IEEE International Conference on Image Processing (ICIP)},
+% pp.~3464--3468, IEEE, 2016.
+%
+% \bibitem{pnp1995}
+% L. Quan and Z. Lan, ``Linear N-point camera pose determination,''
+% \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+% vol.~21, no.~8, pp.~774--780, 1999.

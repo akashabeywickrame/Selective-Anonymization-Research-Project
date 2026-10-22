@@ -1,0 +1,8 @@
+stage,avg_ms_per_frame
+frame_read,18.605
+detection_yolo,150.227
+tracking_sort,4.320
+classification,0.048
+anonymization,1.540
+total_per_frame,174.740
+fps,5.72

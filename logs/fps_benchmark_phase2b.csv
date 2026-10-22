@@ -1,0 +1,11 @@
+stage,avg_ms_per_frame
+frame_read,15.368
+detection_yolo,65.263
+tracking_sort,0.458
+classification,0.060
+landmarks_mediapipe,18.893
+landmark_faces_per_frame,0.990
+landmark_ms_per_face,19.084
+anonymization,1.445
+total_per_frame,101.487
+fps,9.85
