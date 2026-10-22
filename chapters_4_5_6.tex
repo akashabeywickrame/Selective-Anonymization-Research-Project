@@ -1,6 +1,12 @@
 % ==============================================================================
 %  CHAPTER 4 — RESULTS
 % ==============================================================================
+% Shrinks its content to the text width only when it would be wider than the page.
+\newsavebox{\fitbox}
+\newcommand{\fitwidth}[1]{\sbox{\fitbox}{#1}%
+  \ifdim\wd\fitbox>\linewidth\resizebox{\linewidth}{!}{\usebox{\fitbox}}%
+  \else\usebox{\fitbox}\fi}
+
 \section{Results}
 \label{sec:results}
 
@@ -219,7 +225,7 @@ columns give the system's decision.}
 \caption{Classification metrics for the Phase~2a and Phase~2b configurations.}
 \label{tab:metrics_2b}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}lcc@{}}
+\fitwidth{\begin{tabular}{@{}lcc@{}}
 \toprule
 \textbf{Metric} & \textbf{Phase 2a} & \textbf{Phase 2b (Full System)} \\
 \midrule
@@ -231,7 +237,7 @@ Precision                           & 81.48\% & 100.00\% \\
 Recall                              & 84.62\% & 57.14\% \\
 F$_1$ Score                         & 83.02\% & 72.73\% \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{singlespace}
 \end{table}
 
@@ -357,7 +363,7 @@ actual (human-labelled) class of each face and columns give the system's decisio
 intervals. IPR is not defined for bystander clips, which contain no partners.}
 \label{tab:metrics_clips}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}lccc@{}}
+\fitwidth{\begin{tabular}{@{}lccc@{}}
 \toprule
 \textbf{Metric} & \textbf{All clips} & \textbf{Interaction clips} & \textbf{Bystander clips} \\
 \midrule
@@ -367,7 +373,7 @@ IPR       & 56.52\% (44.8-67.6) & 56.52\% (44.8-67.6) & not defined \\
 Precision & 97.50\% & 100.00\% & not defined \\
 F$_1$     & 71.56\% & 72.22\% & not defined \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{singlespace}
 \end{table}
 
@@ -418,7 +424,7 @@ effect on the 102 clips of the video-clip evaluation.
 95\% Wilson confidence intervals).}
 \label{tab:secondpass}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}lccc@{}}
+\fitwidth{\begin{tabular}{@{}lccc@{}}
 \toprule
 \textbf{Metric} & \textbf{Live system} & \textbf{+ Retroactive latch} & \textbf{+ Friend group} \\
 \midrule
@@ -428,7 +434,7 @@ IPR       & 56.52\% (44.8-67.6) & 71.01\% (59.4-80.4) & 78.26\% (67.2-86.4) \\
 Precision & 97.50\% & 96.08\% & 96.43\% \\
 F$_1$     & 71.56\% & 81.67\% & 86.40\% \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{singlespace}
 \end{table}
 
@@ -571,7 +577,7 @@ projected Raspberry Pi 5 throughput (3.5$\times$ scaling factor). Battery figure
 single runs affected by rising processor temperature.}
 \label{tab:power}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}lcccc@{}}
+\fitwidth{\begin{tabular}{@{}lcccc@{}}
 \toprule
  & \multicolumn{2}{c}{\textbf{Mains power}} & \multicolumn{2}{c}{\textbf{Battery power}} \\
 \textbf{Configuration} & \textbf{Laptop} & \textbf{Pi 5 (projected)} & \textbf{Laptop} & \textbf{Pi 5 (projected)} \\
@@ -580,7 +586,7 @@ Phase~2a & 11.6~FPS & 3.3~FPS & 7.5-9.1~FPS & 2.1-2.6~FPS \\
 Phase~2b & 9.4~FPS  & 2.7~FPS & 6.1~FPS     & 1.7~FPS \\
 Landmarks per face & 20.1~ms & & 33.5~ms & \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{singlespace}
 \end{table}
 
@@ -738,7 +744,12 @@ manufacturer has not released the figure.}
 \label{tab:glasses}
 \renewcommand{\arraystretch}{1.3}
 \small
-\begin{tabular}{@{}lllll@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\linewidth}
+                 >{\raggedright\arraybackslash}p{0.21\linewidth}
+                 >{\raggedright\arraybackslash}p{0.16\linewidth}
+                 >{\raggedright\arraybackslash}p{0.15\linewidth}
+                 >{\raggedright\arraybackslash}p{0.20\linewidth}@{}}
 \toprule
 \textbf{Device} & \textbf{Processor} & \textbf{AI accelerator} & \textbf{Battery} & \textbf{Where vision AI runs} \\
 \midrule

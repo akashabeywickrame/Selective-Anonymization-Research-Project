@@ -128,6 +128,8 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 ## Rules for working on this project
 
+- **Tables must fit the text width** (A4, 40 mm left / 15 mm right margin, about 155 mm). `chapters_4_5_6.tex` defines `itwidth{...}` at the top, which shrinks a tabular only when it is wider than `\linewidth`. Wrap any new wide table in it, or use `p{..\linewidth}` columns for text-heavy tables (as in `tab:glasses`, which was Table 16 and overflowed).
+
 - **No file names, script names or code identifiers in dissertation text** (owner, 2026-10-21). Examiners don't know the repo, so describe things in plain words (e.g. "a high-resolution timer", "interaction latching").
 
 - **No long dashes in dissertation text** (owner, 2026-10-21): no em dashes (`---`) and no en dashes (`--`). Use a short hyphen for number ranges (`15-25~ms`), and rewrite sentences with commas or full stops instead of dashes.
