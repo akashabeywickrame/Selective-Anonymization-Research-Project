@@ -128,6 +128,8 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 ## Rules for working on this project
 
+- **University thesis template (uopThesis class, given by the university, 2026-10-26):** book-style (`\chapter`), one file per chapter in `chapters/` added to main.tex with `\include{chapters/X.tex}`, natbib author-year citations (`\citep`), BibTeX `References.bib` with `apalike`, images in `images/`. `chapters_4_5_6.tex` stays the working copy; after every edit run `python -m utils.export_thesis_chapters`, which writes `thesis/chapters/{Results,Discussion,Conclusion}.tex` (section levels shifted, `Section~4.x` → `ef`, `\cite` → `\citep`) and `thesis/References_chapters_4_6.bib` (11 entries). The frozen Intro/Lit/Methodology are still in article format with a numeric `thebibliography`; they need a FORMAT-only conversion (content unchanged) before they fit the template. Ask the owner first.
+
 - **Tables must fit the text width** (A4, 40 mm left / 15 mm right margin, about 155 mm). `chapters_4_5_6.tex` defines `itwidth{...}` at the top, which shrinks a tabular only when it is wider than `\linewidth`. Wrap any new wide table in it, or use `p{..\linewidth}` columns for text-heavy tables (as in `tab:glasses`, which was Table 16 and overflowed).
 
 - **No file names, script names or code identifiers in dissertation text** (owner, 2026-10-21). Examiners don't know the repo, so describe things in plain words (e.g. "a high-resolution timer", "interaction latching").
