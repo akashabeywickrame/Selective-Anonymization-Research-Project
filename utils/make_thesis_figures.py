@@ -144,9 +144,10 @@ def fig_throughput():
             ("Laptop, battery (measured)", 9.1, 6.1),
             ("Raspberry Pi 5, PyTorch detector", 1.6, 1.5),
             ("Raspberry Pi 5, NCNN detector", 4.9, 3.7),
-            ("Ray-Ban Meta CPU, NCNN detector", 3.9, 2.9),
-            ("Pi-class CPU + phone NPU (upper bound)", 8.3, 5.3)][::-1]
-    fig, ax = plt.subplots(figsize=(6.0, 3.3))
+            ("Ray-Ban Meta / Display, CPU only", 3.9, 2.9),
+            ("Ray-Ban Meta / Display, NPU (upper bound)", 6.7, 4.2),
+            ("Snap Spectacles 5 (upper end of range)", 6.7, 4.2)][::-1]
+    fig, ax = plt.subplots(figsize=(6.0, 3.7))
     h = 0.36
     for i, (name, a, b) in enumerate(rows):
         ax.barh(i + h / 2 + 0.01, a, height=h, color=BLUE, label="Phase 2a" if i == 0 else None)

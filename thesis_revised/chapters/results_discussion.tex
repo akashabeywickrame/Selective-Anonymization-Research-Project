@@ -465,45 +465,70 @@ Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & NPU & QNN     & YOLO26n 
 \end{singlespace}
 \end{table}
 
-\paragraph{Projected throughput.}
-Using the method of Section~\ref{sec:evaldesign}, the remaining stages (31.0~ms for
-Phase~2a, plus 19.9~ms of landmarks for Phase~2b) were multiplied by 3.5 and added to the
-published detection time for each device (Table~\ref{tab:projection},
-Figure~\ref{fig:throughput}). For the Ray-Ban Meta glasses, whose Snapdragon AR1 has four
-CPU cores at 1.9~GHz \cite{qcom_ar1}, I scaled the Raspberry Pi~5 projection by the ratio
-of clock speeds (2.4/1.9). This assumes the AR1's cores do about as much work per clock
-cycle as the Pi's Cortex-A76 cores, which Qualcomm does not publish. The last row places
-the detector on a smartphone-class neural processing unit while the other stages stay on
-a Pi-class CPU; since the AR1's neural processing unit is smaller than a flagship phone's,
-this row is an upper bound. The chips in Snap Spectacles and Meta Aria Gen~2 are not
-published, so I could not project for them.
+\paragraph{Projected throughput on each device.}
+To compare the devices of Table~\ref{tab:glasses} directly, I projected the pipeline onto
+each of them with the method of Section~\ref{sec:evaldesign}: the published detection time
+for that hardware, plus the remaining stages (31.0~ms for Phase~2a, and a further 19.9~ms of
+landmarks for Phase~2b) multiplied by 3.5 for a Pi-class CPU. Table~\ref{tab:projection}
+and Figure~\ref{fig:throughput} give the results; the assumptions behind each row are as
+follows.
+
+\begin{itemize}
+  \item \textbf{Raspberry Pi~5.} Detection times are the published Pi~5 benchmarks for the
+        PyTorch format my pipeline uses and for NCNN, the fastest format on that board.
+  \item \textbf{Ray-Ban Meta and Meta Ray-Ban Display.} Both use the Snapdragon AR1 Gen~1,
+        whose CPU has four cores at 1.9~GHz \cite{qcom_ar1}, so they share one projection.
+        For the CPU-only case I scaled the Pi~5 NCNN projection by the ratio of clock
+        speeds (2.4/1.9), assuming the AR1's cores do about as much work per clock cycle as
+        the Pi's Cortex-A76 cores, which Qualcomm does not publish. For the case where the
+        detector runs on the AR1's Hexagon NPU, I used the published NPU time of a
+        flagship Snapdragon phone; the AR1's NPU is smaller, so this row is an upper bound.
+  \item \textbf{Snap Spectacles (5th generation).} Snap states that the glasses use two
+        Snapdragon processors but not which ones \cite{spectacles5}. I therefore give a
+        range from the AR1 CPU-only case to the AR1 NPU case, assuming chips of the same
+        smart-glasses class.
+  \item \textbf{Meta Aria Gen~2.} Its perception runs on a custom Meta co-processor whose
+        design and benchmarks are not published \cite{aria2}, so no defensible projection
+        is possible.
+\end{itemize}
 
 \begin{table}[htbp]
 \begin{singlespace}
 \centering
-\caption{Measured and projected throughput of the full pipeline.}
+\caption{Measured and projected throughput of the full pipeline on each device. A live
+camera view typically needs 15 to 30 frames per second.}
 \label{tab:projection}
 \renewcommand{\arraystretch}{1.3}
-\fitwidth{\begin{tabular}{@{}llcc@{}}
+\fitwidth{\begin{tabular}{@{}lllcc@{}}
 \toprule
-\textbf{Device and configuration} & \textbf{Basis} & \textbf{Phase 2a} & \textbf{Phase 2b} \\
+\textbf{Device} & \textbf{Configuration} & \textbf{Basis} & \textbf{Phase 2a} & \textbf{Phase 2b} \\
 \midrule
-Laptop, mains power                        & Measured    & 11.6 FPS    & 9.4 FPS \\
-Laptop, battery power                      & Measured    & 7.5-9.1 FPS & 6.1 FPS \\
-Raspberry Pi~5, PyTorch detector           & Projected   & 1.6 FPS     & 1.5 FPS \\
-Raspberry Pi~5, NCNN detector              & Projected   & 4.9 FPS     & 3.7 FPS \\
-Ray-Ban Meta CPU, NCNN detector            & Projected   & 3.9 FPS     & 2.9 FPS \\
-Pi-class CPU with phone-class NPU detector & Upper bound & 8.3 FPS     & 5.3 FPS \\
+Laptop (Core i5-13420H)       & mains power               & Measured    & 11.6 FPS    & 9.4 FPS \\
+                              & battery power             & Measured    & 7.5-9.1 FPS & 6.1 FPS \\
+Raspberry Pi~5                & CPU, PyTorch detector     & Projected   & 1.6 FPS     & 1.5 FPS \\
+                              & CPU, NCNN detector        & Projected   & 4.9 FPS     & 3.7 FPS \\
+Ray-Ban Meta and              & CPU only, NCNN detector   & Projected   & 3.9 FPS     & 2.9 FPS \\
+Meta Ray-Ban Display (AR1)    & detector on NPU           & Upper bound & 6.7 FPS     & 4.2 FPS \\
+Snap Spectacles (5th gen.)    & chips not published       & Range       & 3.9-6.7 FPS & 2.9-4.2 FPS \\
+Meta Aria Gen~2               & chip not published        & Not projected & & \\
 \bottomrule
 \end{tabular}}
 \end{singlespace}
 \end{table}
 
+Across the glasses, the projected frame rates fall between 2.9 and 6.7 frames per second.
+All of them are below the Raspberry Pi~5 with an NCNN detector, because the glasses' CPUs
+run at a lower clock speed, and all of them are below the rate a live view needs. Moving
+the detector to the NPU raises every glasses projection by roughly 70\% for Phase~2a and
+45\% for Phase~2b. The gain is smaller for Phase~2b because landmark extraction still runs on
+the CPU.
+
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_throughput.pdf}
-\caption{Measured and projected throughput. The battery bar for Phase~2a shows the faster
-of the two runs.}
+\caption{Measured and projected throughput on each device. The battery bar for
+Phase~2a shows the faster of the two runs; for Snap Spectacles the bars show the upper end
+of the range.}
 \label{fig:throughput}
 \end{figure}
 
