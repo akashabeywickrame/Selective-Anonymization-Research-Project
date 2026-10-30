@@ -355,6 +355,77 @@ F$_1$     & 71.56\% & 81.67\% & 86.40\% \\
 \end{table}
 
 % ------------------------------------------------------------------------------
+\subsection{Improvements Tested After the Main Evaluation}
+\label{sec:res_improve}
+
+\paragraph{Persistent latch and delayed output.}
+Table~\ref{tab:delay} shows the live system with a latch that lasts as long as the track
+number, and with the output delayed by up to 20~seconds.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Persistent latch and delayed live output on Set~C.}
+\label{tab:delay}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{TP / FN / FP / TN} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+Live system (as evaluated)        & 39 / 30 / 1 / 32 & 96.97\% & 56.52\% & 71.56\% \\
+Persistent latch, no delay        & 42 / 27 / 1 / 32 & 96.97\% & 60.87\% & 75.00\% \\
+Persistent latch, 1~s delay       & 44 / 25 / 2 / 31 & 93.94\% & 63.77\% & 76.52\% \\
+Persistent latch, 3~s delay       & 46 / 23 / 2 / 31 & 93.94\% & 66.67\% & 78.63\% \\
+Persistent latch, 5~s delay       & 47 / 22 / 2 / 31 & 93.94\% & 68.12\% & 79.66\% \\
+Persistent latch, 10~s delay      & 48 / 21 / 2 / 31 & 93.94\% & 69.57\% & 80.67\% \\
+Persistent latch, 20~s delay      & 49 / 20 / 2 / 31 & 93.94\% & 71.01\% & 81.67\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+Keeping the latch for as long as the tracker keeps the face's number recovered three
+partners with no extra exposure. A delay of one second recovered two more but exposed one
+more bystander, and further delay recovered partners steadily, reaching the result of the
+offline retroactive latch at 20~seconds.
+
+\paragraph{Adaptive size threshold.}
+Table~\ref{tab:adaptive} gives the cross-validated results of the threshold changes, next
+to the live system.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Size-threshold changes on Set~C, estimated by leave-one-video-out
+cross-validation. The setting most often chosen across the 21 folds is shown.}
+\label{tab:adaptive}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Rule} & \textbf{Setting chosen} & \textbf{TP / FN / FP / TN} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+Live system                          & 1.2\% for all faces & 39 / 30 / 1 / 32 & 96.97\% & 56.52\% & 71.56\% \\
+Lower fixed threshold                & 0.9\%                & 53 / 16 / 5 / 28 & 84.85\% & 76.81\% & 83.46\% \\
+Adaptive: facing and speaking        & 1.0\% when speaking  & 41 / 28 / 2 / 31 & 93.94\% & 59.42\% & 73.21\% \\
+\textbf{Adaptive: facing the wearer} & \textbf{0.6\% when facing} & \textbf{54 / 15 / 3 / 30} & \textbf{90.91\%} & \textbf{78.26\%} & \textbf{85.71\%} \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+The adaptive rule that lowers the threshold to 0.6\% for faces turned towards the wearer
+gave the best balance on held-out videos: it kept 15 more partners visible than the live
+system at the cost of two more exposed bystanders. A lower fixed threshold kept a similar
+number of partners but exposed four more bystanders, because it also admits small faces
+that are turned away. Requiring the face to be speaking as well changed little, since
+few of the small faces had enough mouth evidence. The cross-validated result for the
+fixed threshold (PSR 84.85\%) is also noticeably worse than the 1.0\% row of the earlier
+sweep (Table~\ref{tab:sweep}), which shows how much a threshold chosen on the evaluation
+clips flatters itself.
+
+\paragraph{The faster detector.}
+%% OPENVINO_RESULT
+
 \subsection{Comparison with Blanket Blurring}
 \label{sec:res_baseline}
 
@@ -621,8 +692,10 @@ exactly the faces that fall below the size threshold.
 
 The answer to RQ1 is therefore that the cues do separate partners from bystanders, but the
 work is done by geometry, and the landmark cues need a different role to add value. The
-most direct change would be to let the speaking cue lower the size threshold for a face
-that is facing the wearer and talking, rather than only relaxing the centre limit.
+most direct change was to let the landmark cues lower the size threshold for a face that
+is facing the wearer, and the cross-validated test in Section~\ref{sec:res_improve}
+confirms it: in that role the head-pose cue kept 15 more partners visible on videos it was
+not tuned on. The cues were not useless; they were in the wrong place in the rule.
 
 \subsubsection{The balance between privacy and utility}
 \label{sec:disc_tradeoff}
@@ -634,19 +707,23 @@ when it keeps a face visible it is almost always right. For a privacy tool this 
 right side to err on: a false positive exposes someone who did not consent, while a false
 negative only blurs a friend.
 
-The threshold sweep shows that the chosen threshold of 1.2\% is not the best point on that
-curve. Between 1.0\% and 1.5\%, PSR is flat while IPR changes by 20 percentage points, so
-1.0\% would have kept about three quarters of the partners visible with no extra exposure.
-I did not change the threshold in this thesis, because choosing it on the same clips used
-to evaluate it would overstate how well it generalises. The sweep does show where the
-useful range lies, and below 1.0\% the cost to bystanders rises quickly, because many
-bystanders in the interaction videos are also people standing a few metres away.
+The threshold sweep suggested that 1.2\% was not the best point on that curve, with 1.0\%
+keeping far more partners at no extra cost. Cross-validation tempered that: chosen on other
+videos, a lower fixed threshold costs real bystander protection, because many bystanders in
+the interaction videos are also people standing a few metres away. Size alone cannot
+separate a friend across the table from a stranger at the same distance. What did work on
+held-out videos was combining size with orientation: lowering the threshold only for faces
+turned towards the wearer kept more than three quarters of the partners visible while still
+blurring about nine in ten bystanders.
 
 The offline second pass reaches a similar point by a different route. Instead of lowering
 the size threshold, it uses time: a person who has been confirmed once, or who stays with
 the confirmed group for a long time, is kept visible. The two approaches address different
 misses. A lower threshold rescues faces that are small for the whole clip, while the second
 pass rescues faces that are confirmed late, and the error analysis shows both kinds exist.
+The delay experiment connects the two settings: a live system that holds its output back
+for a few seconds recovers part of the offline gain, and simply keeping the latch for as
+long as the tracker keeps a face's number recovers some partners at no cost at all.
 
 \subsubsection{Comparison with prior work}
 \label{sec:disc_prior}

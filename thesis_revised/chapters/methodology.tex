@@ -696,6 +696,35 @@ area threshold from 0.4\% to 2.0\% of the frame to see how the balance between P
 depends on it. Before relying on the replay, I checked that it reproduces the logged
 decisions.
 
+\subsubsection{Testing the improvements}
+\label{sec:improve_method}
+
+The analyses above suggested three improvements, which I tested after the main evaluation
+on the same Set~C labels.
+
+\textbf{Persistent latch and delayed output.} In the live system a face's latch is cleared
+whenever the detector misses it for a frame, even though the tracker keeps its number. I
+simulated a latch that lasts as long as the track number, and a live output delayed by
+$D$ seconds, in which a frame is shown only after the next $D$ seconds have been
+processed, so a face can be kept visible if its track is confirmed at any time up to $D$
+seconds later. $D = 0$ is the persistent latch on its own, and an unlimited delay is the
+retroactive latch of the offline pass.
+
+\textbf{Adaptive size threshold.} Most missed partners were just below the area threshold,
+so I tested two kinds of change: a lower fixed threshold, and an adaptive rule in which a
+face below 1.2\% still counts as close if it is above a lower threshold and its landmarks
+show it facing the wearer ($|\theta_{\mathrm{yaw}}| \le 20^\circ$), either on its own or
+only when it is also speaking. Choosing the threshold on the same clips used to score it
+would overstate the result, so I used leave-one-video-out cross-validation: for each of the
+21 videos, the setting with the highest balanced accuracy (the mean of PSR and IPR) on the
+clips of the other 20 videos was applied to the held-out video. The pooled held-out
+decisions give an estimate of how the rule would do on videos it was not tuned on.
+
+\textbf{The faster detector.} I re-ran the full pipeline on all 21 videos with the OpenVINO
+detector and scored it against the Set~C labels. Because track numbers differ between
+runs, each clip's person was matched to the track in the new run whose boxes overlapped
+the original track most during the clip.
+
 \subsubsection{Speed and power measurement}
 
 I measured processing time on the laptop using only the CPU. Each stage of the pipeline

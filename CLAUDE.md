@@ -156,6 +156,13 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 - New projections (others ×3.5; every frame others 9.9/24.5 ms, every 2nd 9.8/16.8): Pi5 PyTorch 1.8/1.7, Pi5 NCNN 7.8/5.6, Pi5 NCNN every2 12.3/9.4; AR1 CPU 6.1/4.4; AR1 NPU (upper bound) 18.1/8.4; AR1 NPU every2 20.4/12.5; Spectacles 6.1-18.1 / 4.4-8.4; Aria not projected.
 - The labelled accuracy evaluation was NOT re-run with the OpenVINO detector (stated as a limitation). The main pipeline (main.py) still uses PyTorch.
 
+## Future-work improvements tested (2026-10-30), `python eval/improvements.py` → logs/improvements.csv
+
+- **Persistent latch** (latch kept as long as the SORT track id, instead of being cleared when a detection is missed): 42/27/1/32 → PSR 96.97, IPR 60.87 (free gain). **Delayed live output** D s: 1 s 93.94/63.77, 3 s 66.67, 5 s 68.12, 10 s 69.57, 20 s = offline retro latch 93.94/71.01.
+- **Adaptive threshold, leave-one-video-out CV** (balanced accuracy): fixed threshold CV 84.85/76.81 (chooses 0.9%); facing+speaking CV 93.94/59.42; **facing (|yaw|≤20°, area ≥0.6%) CV 90.91/78.26, F1 85.71** (best). The earlier in-sample "1.0% gives 72.46% free" claim was optimistic and has been replaced throughout.
+- Not changed in config/main.py: these are evaluated by replay only.
+- **OpenVINO accuracy:** `python eval/rerun_openvino.py` (all 21 videos, fresh log logs/tracking_log_openvino.csv, ~1.5 h) then `python eval/score_openvino.py` (matches clip tracks by IoU). Placeholder `%% OPENVINO_RESULT` in results_discussion.tex §sec:res_improve awaits the numbers.
+
 ## Rules for working on this project
 
 - **University thesis template (uopThesis class, given by the university, 2026-10-26):** book-style (`\chapter`), one file per chapter in `chapters/` added to main.tex with `\include{chapters/X.tex}`, natbib author-year citations (`\citep`), BibTeX `References.bib` with `apalike`, images in `images/`. `chapters_4_5_6.tex` stays the working copy; after every edit run `python -m utils.export_thesis_chapters`, which writes `thesis/chapters/{Results,Discussion,Conclusion}.tex` (section levels shifted, `Section~4.x` → `

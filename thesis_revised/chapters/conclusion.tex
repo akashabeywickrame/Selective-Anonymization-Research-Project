@@ -28,13 +28,14 @@ partners compared with blurring every face?}
 Blanket blurring protects every bystander but keeps no partner visible. The live system
 protected 96.97\% of bystanders while keeping 56.52\% of partners visible. For recorded
 video, the offline second pass raised partner preservation to 78.26\% while still
-protecting 93.94\% of bystanders, and the threshold analysis showed that a size threshold
-of 1.0\% instead of 1.2\% would raise the live system's partner preservation to 72.46\%
-with no extra exposure on the same clips. Selective anonymization therefore gives up a few
+protecting 93.94\% of bystanders. Tested on held-out videos, letting the head-pose cue
+lower the size threshold for faces turned towards the wearer raised the live system's
+partner preservation to 78.26\% while blurring 90.91\% of bystanders, and keeping the
+latch for as long as the tracker keeps a face raised it to 60.87\% at no cost to
+bystanders. Selective anonymization therefore gives up a few
 percentage points of bystander protection to recover most of what blanket blurring
 destroys. These figures rest on labels from five annotators with almost perfect agreement,
-but on 21 videos, so they should be confirmed on more varied footage, and the improved
-threshold on clips it was not chosen from.
+but on 21 videos, so they should be confirmed on more varied footage.
 
 \paragraph{RQ3: How much computation does it need, and is it feasible on wearable-class
 hardware?}
@@ -69,22 +70,19 @@ devices themselves.
 
 \subsection{Future Work}
 
-\paragraph{Fix the distance problem.}
-Most missed partners were friends who appear small in the frame. The first steps are to
-validate a lower size threshold, around 1.0\%, on new clips, and to let the speaking and
-head-pose cues lower the threshold for a face that is turned towards the wearer and
-talking, which is the role the ablation suggests they should play.
+\paragraph{Confirm the improvements on new data.}
+Three improvements were tested after the main evaluation: the adaptive size threshold,
+the persistent latch with an optional output delay, and the offline second pass. The
+adaptive threshold was cross-validated across videos, but all three were developed with
+knowledge of the same labelled clips. I would label a fresh set of clips from different
+videos, with annotators who do not know the system, and measure them on it, then make the
+best of them the default.
 
-\paragraph{Test the second pass on new data.}
-The retroactive latch and the group rule were designed after looking at the video-clip
-errors. I would label a fresh set of clips from different videos, with annotators who do
-not know the system, and measure both rules on it.
-
-\paragraph{Bring the group rule to live use.}
-Both second-pass rules need to see the future of the recording. Holding back the live
-output for a few seconds would let the system apply them before frames are shown. The
-useful experiment is to measure how much partner preservation each extra second of delay
-buys.
+\paragraph{Move the landmark cues earlier in the rule.}
+The ablation and the adaptive threshold together show that head pose is most useful when it
+decides how small a face may be, not as a veto on faces that are already close. The next
+version of the classifier should be designed around that, and the speaking cue should be
+given more time to accumulate evidence on small faces.
 
 \paragraph{Measure on real hardware.}
 I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and on

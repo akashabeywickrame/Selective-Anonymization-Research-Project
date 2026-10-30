@@ -1,0 +1,28 @@
+experiment,config,tp,fn,fp,tn,psr,ipr,prec,f1,note
+threshold_cv,current system (1.2%),39,30,1,32,96.97,56.52,97.5,71.56,
+threshold_cv,fixed threshold (cross-validated),53,16,5,28,84.85,76.81,91.38,83.46,most often chosen: {'area': 0.009}
+threshold_all,fixed threshold {'area': 0.006},58,11,5,28,84.85,84.06,92.06,87.88,
+threshold_all,fixed threshold {'area': 0.008},55,14,4,29,87.88,79.71,93.22,85.94,
+threshold_all,fixed threshold {'area': 0.009},53,16,2,31,93.94,76.81,96.36,85.48,
+threshold_all,fixed threshold {'area': 0.01},50,19,1,32,96.97,72.46,98.04,83.33,
+threshold_all,fixed threshold {'area': 0.011},45,24,1,32,96.97,65.22,97.83,78.26,
+threshold_all,fixed threshold {'area': 0.012},39,30,1,32,96.97,56.52,97.5,71.56,
+threshold_all,fixed threshold {'area': 0.015},36,33,1,32,96.97,52.17,97.3,67.92,
+threshold_cv,adaptive: facing and speaking (cross-validated),41,28,2,31,93.94,59.42,95.35,73.21,"most often chosen: {'area': 0.012, 'low': 0.01, 'need_talk': True}"
+threshold_all,"adaptive: facing and speaking {'area': 0.012, 'low': 0.004, 'need_talk': True}",42,27,2,31,93.94,60.87,95.45,74.34,
+threshold_all,"adaptive: facing and speaking {'area': 0.012, 'low': 0.006, 'need_talk': True}",41,28,1,32,96.97,59.42,97.62,73.87,
+threshold_all,"adaptive: facing and speaking {'area': 0.012, 'low': 0.008, 'need_talk': True}",41,28,1,32,96.97,59.42,97.62,73.87,
+threshold_all,"adaptive: facing and speaking {'area': 0.012, 'low': 0.01, 'need_talk': True}",41,28,1,32,96.97,59.42,97.62,73.87,
+threshold_cv,adaptive: facing (cross-validated),54,15,3,30,90.91,78.26,94.74,85.71,"most often chosen: {'area': 0.012, 'low': 0.006, 'need_talk': False}"
+threshold_all,"adaptive: facing {'area': 0.012, 'low': 0.004, 'need_talk': False}",56,13,3,30,90.91,81.16,94.92,87.5,
+threshold_all,"adaptive: facing {'area': 0.012, 'low': 0.006, 'need_talk': False}",54,15,2,31,93.94,78.26,96.43,86.4,
+threshold_all,"adaptive: facing {'area': 0.012, 'low': 0.008, 'need_talk': False}",52,17,2,31,93.94,75.36,96.3,84.55,
+threshold_all,"adaptive: facing {'area': 0.012, 'low': 0.01, 'need_talk': False}",49,20,1,32,96.97,71.01,98.0,82.35,
+delay,0 s delay,42,27,1,32,96.97,60.87,97.67,75.0,
+delay,1 s delay,44,25,2,31,93.94,63.77,95.65,76.52,
+delay,2 s delay,44,25,2,31,93.94,63.77,95.65,76.52,
+delay,3 s delay,46,23,2,31,93.94,66.67,95.83,78.63,
+delay,5 s delay,47,22,2,31,93.94,68.12,95.92,79.66,
+delay,10 s delay,48,21,2,31,93.94,69.57,96.0,80.67,
+delay,20 s delay,49,20,2,31,93.94,71.01,96.08,81.67,
+delay,offline (whole recording),49,20,2,31,93.94,71.01,96.08,81.67,
