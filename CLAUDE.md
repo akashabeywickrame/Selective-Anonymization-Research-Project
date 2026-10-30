@@ -34,7 +34,7 @@ YOLOv8n-face (core/detector.py)
 | `main.py` | Runs the pipeline over all videos in `data/` (resumable; skips a video if its `*_selective.mp4` already exists). Flags: `--category`, `--video` |
 | `config.py` | All thresholds and paths |
 | `core/` | detector, tracker, classifier, interaction_cues, landmark_extractor, anonymizer, visualizer |
-| `data/bystander/` (video1–7), `data/interaction/` (video1–16) | 23 input clips, all collected from YouTube/web (none recorded by the owner). video15/16 were added late and are **not** in the formal evaluation (21 clips) |
+| `data/bystander/` (video1–7), `data/interaction/` (video1–16) | 23 input clips (none recorded by the owner): interaction videos from the EgoBlur release, bystander clips cut from YouTube walking videos chosen from different cities/countries, day and night, to avoid location bias (owner, 2026-10-30). video15/16 were added late and are **not** in the formal evaluation (21 clips) |
 | `output/` | Selective, blanket, and debug videos |
 | `logs/tracking_log.csv` | Per-frame, per-face log (~224k rows): video, category, frame, face_id, bbox, confidence, interacting |
 | `eval/evaluate.py` | `--accuracy` (vs ground_truth CSVs) and `--fps --frames 300` benchmark |
