@@ -61,3 +61,6 @@ eval/track_samples/
 # Local Claude Code settings
 .claude/settings.local.json
 .claude/
+
+# Exported detector models (regenerate with Ultralytics export)
+models/exported/

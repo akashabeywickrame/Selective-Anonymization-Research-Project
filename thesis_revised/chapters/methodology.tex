@@ -699,11 +699,24 @@ decisions.
 \subsubsection{Speed and power measurement}
 
 I measured processing time on the laptop using only the CPU. Each stage of the pipeline
-was timed separately with a high-resolution timer over the first 300 frames of one
-interaction video, and the throughput in frames per second (FPS) is the number of frames
-divided by the total time. I ran the benchmark with the laptop on mains power and again on
-battery, since wearable devices always run on battery and laptops limit processor speed
-when unplugged.
+was timed separately with a high-resolution timer over 300 frames of one interaction video,
+after 30 warm-up frames that are not counted, so that one-off start-up costs do not inflate
+the result. Each configuration was run twice, and the throughput in frames per second (FPS)
+is the number of frames divided by the total time, taking the median of the two runs. An
+earlier version of the benchmark without warm-up frames was also run with the laptop on
+battery, since wearable devices always run on battery and laptops limit processor speed when
+unplugged.
+
+\textbf{Detector optimisation.} Because detection dominated the time, I measured three
+optimisations of the detector alone: exporting the same trained weights to the ONNX Runtime
+and Intel OpenVINO inference engines, reducing the detector's input size from 640 to 416
+and 320 pixels, and running the detector only on every second or third frame while keeping
+the previous decisions and blur boxes on the frames in between. A faster detector is only
+useful if it still finds the faces, so for each variant I measured \emph{face recall}, the
+share of faces found by the original detector (on 200 frames spread over 8 videos) that the
+variant also finds with an IoU of at least 0.5. For the frame-skipping variants I also
+measured \emph{coverage}: on the skipped frames of 600 frames from two videos, the share of
+faces present that are still covered by a held blur box with an IoU of at least 0.3.
 
 \subsubsection{Projection to edge hardware}
 

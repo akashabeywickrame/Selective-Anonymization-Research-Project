@@ -123,9 +123,8 @@ def fig_tradeoff():
 
 # ── 4. Time per pipeline stage ────────────────────────────────────────────────
 def fig_latency():
-    stages = [("Frame reading", 10.0), ("Face detection", 55.1), ("Tracking", 20.1),
-              ("Landmarks (Phase 2b)", 19.9), ("Selective blurring", 0.87),
-              ("Classification", 0.02)]
+    stages = [("Frame reading", 8.7), ("Face detection", 46.9), ("Tracking", 0.27),
+              ("Landmarks (Phase 2b)", 14.7), ("Classification and blurring", 0.9)]
     fig, ax = plt.subplots(figsize=(6.0, 2.6))
     names = [s[0] for s in stages][::-1]
     vals = [s[1] for s in stages][::-1]
@@ -133,31 +132,35 @@ def fig_latency():
     for i, v in enumerate(vals):
         ax.text(v + 0.8, i, f"{v:g} ms", va="center", fontsize=8, color=INK)
     ax.set_xlabel("Mean time per frame on the laptop CPU (ms)")
-    ax.set_xlim(0, 66)
+    ax.set_xlim(0, 56)
     ax.grid(axis="y", visible=False)
     save(fig, "fig_latency")
 
 
 # ── 5. Measured and projected throughput ──────────────────────────────────────
 def fig_throughput():
-    rows = [("Laptop, mains (measured)", 11.6, 9.4),
-            ("Laptop, battery (measured)", 9.1, 6.1),
-            ("Raspberry Pi 5, PyTorch detector", 1.6, 1.5),
-            ("Raspberry Pi 5, NCNN detector", 4.9, 3.7),
-            ("Ray-Ban Meta / Display, CPU only", 3.9, 2.9),
-            ("Ray-Ban Meta / Display, NPU (upper bound)", 6.7, 4.2),
-            ("Snap Spectacles 5 (upper end of range)", 6.7, 4.2)][::-1]
-    fig, ax = plt.subplots(figsize=(6.0, 3.7))
+    rows = [("Laptop, PyTorch (measured)", 17.6, 14.0),
+            ("Laptop, OpenVINO (measured)", 31.1, 22.4),
+            ("Laptop, OpenVINO, every 2nd frame (measured)", 49.3, 36.6),
+            ("Raspberry Pi 5, PyTorch", 1.8, 1.7),
+            ("Raspberry Pi 5, NCNN", 7.8, 5.6),
+            ("Raspberry Pi 5, NCNN, every 2nd frame", 12.3, 9.4),
+            ("Ray-Ban Meta / Display, CPU only", 6.1, 4.4),
+            ("Ray-Ban Meta / Display, NPU (upper bound)", 18.1, 8.4),
+            ("Ray-Ban Meta / Display, NPU, every 2nd frame", 20.4, 12.5),
+            ("Snap Spectacles 5 (upper end of range)", 18.1, 8.4)][::-1]
+    fig, ax = plt.subplots(figsize=(6.2, 5.0))
     h = 0.36
     for i, (name, a, b) in enumerate(rows):
         ax.barh(i + h / 2 + 0.01, a, height=h, color=BLUE, label="Phase 2a" if i == 0 else None)
         ax.barh(i - h / 2 - 0.01, b, height=h, color=ORANGE, label="Phase 2b" if i == 0 else None)
-        lab = "7.5-9.1" if name.startswith("Laptop, battery") else f"{a:g}"
-        ax.text(a + 0.15, i + h / 2, lab, va="center", fontsize=7.5, color=INK)
-        ax.text(b + 0.15, i - h / 2, f"{b:g}", va="center", fontsize=7.5, color=INK)
+        ax.text(a + 0.4, i + h / 2, f"{a:.1f}", va="center", fontsize=7.5, color=INK)
+        ax.text(b + 0.4, i - h / 2, f"{b:.1f}", va="center", fontsize=7.5, color=INK)
     ax.set_yticks(range(len(rows)), [r[0] for r in rows])
     ax.set_xlabel("Frames per second")
-    ax.set_xlim(0, 13.5)
+    ax.axvline(15, color=INK2, ls="--", lw=1)
+    ax.text(15.4, len(rows) - 0.55, "15 FPS", fontsize=8, color=INK2)
+    ax.set_xlim(0, 56)
     ax.grid(axis="y", visible=False)
     ax.legend(loc="lower right", fontsize=8)
     save(fig, "fig_throughput")

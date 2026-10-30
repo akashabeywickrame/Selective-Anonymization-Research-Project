@@ -387,50 +387,104 @@ Phase~2b with offline second pass & C   & 93.94\%  & 78.26\% & 86.40\% \\
 
 \paragraph{Time per stage.}
 Figure~\ref{fig:latency} and Table~\ref{tab:fps} give the time spent in each stage on the
-laptop CPU under mains power. The Phase~2a pipeline took 86.0~ms per frame, or
-11.62~frames per second (FPS), and face detection took almost two thirds of that. The
-classifier took 0.02~ms. The landmark stage of Phase~2b, timed separately in two runs,
-took 20.1~ms per face crop on average (21.1 and 19.1~ms). The test video had 0.99 tracked
-faces per frame, which adds 19.9~ms per frame and brings Phase~2b to about 106~ms per
-frame, or 9.4~FPS; the fastest direct Phase~2b run reached 9.9~FPS. Because landmarks are
+laptop CPU under mains power, with the detector in its original PyTorch form. Face
+detection took 46.9~ms per frame, about 83\% of the Phase~2a total, while tracking took
+0.27~ms and classification with blurring under 1~ms. Phase~2a ran at 17.6 frames per
+second (FPS). Landmark extraction added 14.7~ms per frame on the test video, which had
+about one tracked face per frame, bringing Phase~2b to 14.0~FPS. Because landmarks are
 computed for every tracked face, this cost grows with the number of faces in view.
+
+My first benchmark, run without warm-up frames, gave a slower 86.0~ms per frame
+(11.62~FPS), with 20.1~ms attributed to tracking. Repeating it with 30 warm-up frames and
+two runs showed that most of that time was one-off start-up work counted in the first
+frames rather than the cost of tracking itself, so the figures in Table~\ref{tab:fps}
+replace it.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_latency.pdf}
-\caption{Mean time per frame for each pipeline stage on the laptop CPU (mains power). The
-landmark stage applies only to Phase~2b.}
+\caption{Mean time per frame for each pipeline stage on the laptop CPU (mains power,
+original PyTorch detector). The landmark stage applies only to Phase~2b.}
 \label{fig:latency}
 \end{figure}
 
 \begin{table}[htbp]
 \begin{singlespace}
 \centering
-\caption{Mean time per frame for each stage (Phase~2a, 300 frames, laptop CPU, mains power).}
+\caption{Mean time per frame for each stage (300 frames after 30 warm-up frames, laptop
+CPU, mains power, original PyTorch detector).}
 \label{tab:fps}
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{@{}lcc@{}}
 \toprule
-\textbf{Stage} & \textbf{Time (ms)} & \textbf{Share of total} \\
+\textbf{Stage} & \textbf{Phase 2a (ms)} & \textbf{Phase 2b (ms)} \\
 \midrule
-Frame reading                  & 10.0  & 11.6\% \\
-Face detection (YOLOv8n-face)  & 55.1  & 64.1\% \\
-Tracking (SORT)                & 20.1  & 23.4\% \\
-Classification                 & 0.02  & $<$0.1\% \\
-Selective blurring             & 0.87  & 1.0\% \\
+Frame reading                      & 8.7   & 8.7 \\
+Face detection (YOLOv8n-face)      & 46.9  & 46.9 \\
+Tracking (SORT)                    & 0.27  & 0.27 \\
+Landmark extraction                &       & 14.7 \\
+Classification and blurring        & 0.9   & 0.9 \\
 \midrule
-\textbf{Total per frame}       & \textbf{86.0} & \textbf{100\%} \\
-\textbf{Throughput}            & \multicolumn{2}{c}{\textbf{11.62 FPS}} \\
+\textbf{Total per frame}           & \textbf{56.8} & \textbf{71.4} \\
+\textbf{Throughput}                & \textbf{17.6 FPS} & \textbf{14.0 FPS} \\
 \bottomrule
 \end{tabular}
 \end{singlespace}
 \end{table}
 
+\paragraph{Optimising the detector.}
+Since detection dominated the time, I measured three ways of making it faster without
+changing the classifier (Table~\ref{tab:optimise}). For each I also measured face recall:
+the share of the faces found by the original detector that the faster version still finds.
+A faster detector that misses faces would leave bystanders unblurred, so recall is a
+privacy measure here, not just an accuracy one.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Effect of detector optimisations on speed and on the faces found (laptop CPU,
+mains power). Face recall is measured against the original PyTorch detector on 200 frames
+from 8 videos; coverage is the share of faces on skipped frames still covered by a held
+blur box.}
+\label{tab:optimise}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Detector variant} & \textbf{Detection (ms)} & \textbf{Phase 2a} & \textbf{Phase 2b} &
+\textbf{Face recall} & \textbf{Coverage} \\
+\midrule
+PyTorch, 640 px (original)        & 46.9 & 17.6 FPS & 14.0 FPS & 100\%   & \\
+ONNX Runtime, 640 px              & 52.0 & 15.5 FPS & 11.7 FPS & 99.7\%  & \\
+\textbf{OpenVINO, 640 px}         & \textbf{21.2} & \textbf{31.1 FPS} & \textbf{22.4 FPS} & \textbf{99.7\%} & \\
+OpenVINO, 416 px                  & 12.3 & 44.8 FPS & 27.4 FPS & 64.3\%  & \\
+OpenVINO, 320 px                  & 10.0 & 47.9 FPS & 29.5 FPS & 50.3\%  & \\
+OpenVINO, 640 px, every 2nd frame & 10.5 & 49.3 FPS & 36.6 FPS & 99.7\%  & 97.9\% \\
+OpenVINO, 640 px, every 3rd frame & 6.9  & 58.8 FPS & 47.7 FPS & 99.7\%  & 93.1\% \\
+OpenVINO, 416 px, every 2nd frame & 6.3  & 62.2 FPS & 42.4 FPS & 64.3\%  & 55.8\% \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+Exporting the same detector to Intel's OpenVINO runtime more than halved the detection
+time and raised the pipeline to 31.1~FPS for Phase~2a and 22.4~FPS for Phase~2b, while
+still finding 99.7\% of the faces the original detector found. ONNX Runtime gave no gain
+on this processor. Shrinking the detector's input from 640 to 416 or 320 pixels was faster
+still, but it lost 36\% and 50\% of the faces, mostly small and distant ones, which would
+leave many bystanders unblurred; I rejected both for that reason. Running the OpenVINO
+detector on every second frame, and keeping the previous decisions and blur boxes on the
+frames in between, reached 49.3~FPS for Phase~2a and 36.6~FPS for Phase~2b. On the skipped
+frames, 97.9\% of faces were still covered by a held blur box; on every third frame this
+fell to 93.1\%. The accuracy results earlier in this chapter were produced with the
+original detector; with OpenVINO finding 99.7\% of the same faces, the decisions are
+expected to be nearly identical, but I did not repeat the labelled evaluation with it.
+
 \paragraph{Battery power.}
-On battery the laptop was slower: landmark extraction took 33.5~ms per face, Phase~2b ran
-at 6.1~FPS, and two Phase~2a runs gave 9.1 and 7.5~FPS. The processor also warmed up over
-these consecutive runs, so these figures are a worst case rather than a precise
-measurement.
+My first benchmark, without warm-up frames, also included runs with the laptop unplugged.
+On battery it measured 9.1 and 7.5~FPS for Phase~2a and 6.1~FPS for Phase~2b, with
+landmark extraction at 33.5~ms per face, against 11.6 and 9.4~FPS on mains power with the
+same method. Running on battery therefore cost between a fifth and a third of the speed. These runs
+were also affected by the processor warming up, so they are a worst case.
 
 % ── Power measurement: enable this paragraph after running the power measurement ──
 % \paragraph{Power draw.}
@@ -439,27 +493,28 @@ measurement.
 % pipeline itself drew about X.X~W and X.X~W, or X.XX and X.XX joules per processed frame.
 
 \paragraph{Detection on other hardware.}
-Table~\ref{tab:det_hw} compares the detection time I measured with published measurements
+Table~\ref{tab:det_hw} compares the detection times I measured with published measurements
 of the same class of model on other processors.
 
 \begin{table}[htbp]
 \begin{singlespace}
 \centering
 \caption{Time to detect faces in one frame with a nano-sized YOLO model on different
-processors. The laptop figure is my measurement; the others are published benchmarks.}
+processors. The laptop figures are my measurements; the others are published benchmarks.}
 \label{tab:det_hw}
 \renewcommand{\arraystretch}{1.3}
 \fitwidth{\begin{tabular}{@{}llllr@{}}
 \toprule
 \textbf{Processor} & \textbf{Unit} & \textbf{Format} & \textbf{Model} & \textbf{Time (ms)} \\
 \midrule
-Intel Core i5-13420H (laptop)                         & CPU & PyTorch & YOLOv8n-face & 55.1 \\
-Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & PyTorch & YOLOv8n      & 508.6 \\
-Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & ONNX    & YOLOv8n      & 198.7 \\
-Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & NCNN    & YOLOv8n      & 94.3 \\
-Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & CPU & QNN     & YOLO26n      & 53.3 \\
-Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & GPU & QNN     & YOLO26n      & 17.2 \\
-Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & NPU & QNN     & YOLO26n      & 11.3 \\
+Intel Core i5-13420H (laptop)                         & CPU & PyTorch  & YOLOv8n-face & 46.9 \\
+Intel Core i5-13420H (laptop)                         & CPU & OpenVINO & YOLOv8n-face & 21.2 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & PyTorch  & YOLOv8n      & 508.6 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & ONNX     & YOLOv8n      & 198.7 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & NCNN     & YOLOv8n      & 94.3 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & CPU & QNN      & YOLO26n      & 53.3 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & GPU & QNN      & YOLO26n      & 17.2 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & NPU & QNN      & YOLO26n      & 11.3 \\
 \bottomrule
 \end{tabular}}
 \end{singlespace}
@@ -468,28 +523,28 @@ Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & NPU & QNN     & YOLO26n 
 \paragraph{Projected throughput on each device.}
 To compare the devices of Table~\ref{tab:glasses} directly, I projected the pipeline onto
 each of them with the method of Section~\ref{sec:evaldesign}: the published detection time
-for that hardware, plus the remaining stages (31.0~ms for Phase~2a, and a further 19.9~ms of
-landmarks for Phase~2b) multiplied by 3.5 for a Pi-class CPU. Table~\ref{tab:projection}
-and Figure~\ref{fig:throughput} give the results; the assumptions behind each row are as
-follows.
+for that hardware, plus the remaining stages measured on the laptop multiplied by 3.5 for a
+Pi-class CPU. With the detector run on every frame the remaining stages took 9.9~ms for
+Phase~2a and 24.5~ms for Phase~2b; with detection on every second frame, 9.8~ms and
+16.8~ms. Table~\ref{tab:projection} and Figure~\ref{fig:throughput} give the results; the
+assumptions behind each device are as follows.
 
 \begin{itemize}
   \item \textbf{Raspberry Pi~5.} Detection times are the published Pi~5 benchmarks for the
-        PyTorch format my pipeline uses and for NCNN, the fastest format on that board.
+        PyTorch format and for NCNN, the fastest format on that board.
   \item \textbf{Ray-Ban Meta and Meta Ray-Ban Display.} Both use the Snapdragon AR1 Gen~1,
         whose CPU has four cores at 1.9~GHz \cite{qcom_ar1}, so they share one projection.
         For the CPU-only case I scaled the Pi~5 NCNN projection by the ratio of clock
         speeds (2.4/1.9), assuming the AR1's cores do about as much work per clock cycle as
         the Pi's Cortex-A76 cores, which Qualcomm does not publish. For the case where the
-        detector runs on the AR1's Hexagon NPU, I used the published NPU time of a
-        flagship Snapdragon phone; the AR1's NPU is smaller, so this row is an upper bound.
+        detector runs on the AR1's Hexagon NPU, I used the published NPU time of a flagship
+        Snapdragon phone; the AR1's NPU is smaller, so these rows are an upper bound.
   \item \textbf{Snap Spectacles (5th generation).} Snap states that the glasses use two
-        Snapdragon processors but not which ones \cite{spectacles5}. I therefore give a
-        range from the AR1 CPU-only case to the AR1 NPU case, assuming chips of the same
-        smart-glasses class.
+        Snapdragon processors but not which ones \cite{spectacles5}. I give a range from the
+        AR1 CPU-only case to the AR1 NPU case, assuming chips of the same class.
   \item \textbf{Meta Aria Gen~2.} Its perception runs on a custom Meta co-processor whose
-        design and benchmarks are not published \cite{aria2}, so no defensible projection
-        is possible.
+        design and benchmarks are not published \cite{aria2}, so no defensible projection is
+        possible.
 \end{itemize}
 
 \begin{table}[htbp]
@@ -503,34 +558,36 @@ camera view typically needs 15 to 30 frames per second.}
 \toprule
 \textbf{Device} & \textbf{Configuration} & \textbf{Basis} & \textbf{Phase 2a} & \textbf{Phase 2b} \\
 \midrule
-Laptop (Core i5-13420H)       & mains power               & Measured    & 11.6 FPS    & 9.4 FPS \\
-                              & battery power             & Measured    & 7.5-9.1 FPS & 6.1 FPS \\
-Raspberry Pi~5                & CPU, PyTorch detector     & Projected   & 1.6 FPS     & 1.5 FPS \\
-                              & CPU, NCNN detector        & Projected   & 4.9 FPS     & 3.7 FPS \\
-Ray-Ban Meta and              & CPU only, NCNN detector   & Projected   & 3.9 FPS     & 2.9 FPS \\
-Meta Ray-Ban Display (AR1)    & detector on NPU           & Upper bound & 6.7 FPS     & 4.2 FPS \\
-Snap Spectacles (5th gen.)    & chips not published       & Range       & 3.9-6.7 FPS & 2.9-4.2 FPS \\
-Meta Aria Gen~2               & chip not published        & Not projected & & \\
+Laptop (Core i5-13420H)    & PyTorch detector                   & Measured      & 17.6 FPS     & 14.0 FPS \\
+                           & OpenVINO detector                  & Measured      & 31.1 FPS     & 22.4 FPS \\
+                           & OpenVINO, every 2nd frame          & Measured      & 49.3 FPS     & 36.6 FPS \\
+Raspberry Pi~5             & CPU, PyTorch detector              & Projected     & 1.8 FPS      & 1.7 FPS \\
+                           & CPU, NCNN detector                 & Projected     & 7.8 FPS      & 5.6 FPS \\
+                           & CPU, NCNN, every 2nd frame         & Projected     & 12.3 FPS     & 9.4 FPS \\
+Ray-Ban Meta and           & CPU only, NCNN detector            & Projected     & 6.1 FPS      & 4.4 FPS \\
+Meta Ray-Ban Display (AR1) & detector on NPU                    & Upper bound   & 18.1 FPS     & 8.4 FPS \\
+                           & detector on NPU, every 2nd frame   & Upper bound   & 20.4 FPS     & 12.5 FPS \\
+Snap Spectacles (5th gen.) & chips not published                & Range         & 6.1-18.1 FPS & 4.4-8.4 FPS \\
+Meta Aria Gen~2            & chip not published                 & Not projected &              & \\
 \bottomrule
 \end{tabular}}
 \end{singlespace}
 \end{table}
 
-Across the glasses, the projected frame rates fall between 2.9 and 6.7 frames per second.
-All of them are below the Raspberry Pi~5 with an NCNN detector, because the glasses' CPUs
-run at a lower clock speed, and all of them are below the rate a live view needs. Moving
-the detector to the NPU raises every glasses projection by roughly 70\% for Phase~2a and
-45\% for Phase~2b. The gain is smaller for Phase~2b because landmark extraction still runs on
-the CPU.
-
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_throughput.pdf}
-\caption{Measured and projected throughput on each device. The battery bar for
-Phase~2a shows the faster of the two runs; for Snap Spectacles the bars show the upper end
-of the range.}
+\caption{Measured and projected throughput on each device. The dashed line marks 15 frames
+per second, the lower end of what a live view needs. For Snap Spectacles the bars show the
+upper end of the range.}
 \label{fig:throughput}
 \end{figure}
+
+On the laptop, the optimised pipeline runs in real time. On the glasses, the projections
+range from 4.4 to 20.4~FPS depending on where detection runs. With the detector on the
+AR1's NPU, Phase~2a is projected to reach 18~FPS, within the range a live view needs, while
+Phase~2b stays below it at 8 to 12~FPS. Once detection moves to the NPU, the landmark stage,
+which still runs on the CPU, becomes the largest cost of Phase~2b.
 
 % ==============================================================================
 \subsection{Discussion}
@@ -617,24 +674,34 @@ how far it goes on its own.
 \subsubsection{Practicality and hardware}
 \label{sec:disc_hw}
 
-Whether the measured speed is practical depends on how the system is used. For
-\emph{recorded video} it is practical now. A five-minute recording is processed on the
-laptop in about 15 minutes, and the offline second pass, which gives the best balance, only
-makes sense for recordings anyway. This matches how blanket anonymization is used today:
-EgoBlur is applied to recordings from Meta's Aria glasses before the data is shared
-\cite{egoblur2023}.
+The first benchmark made the system look impractical, and the optimisation results show
+why that impression was wrong. The method itself was never the problem: the classification
+that is the contribution of this thesis takes a fraction of a millisecond. Almost all of
+the time went into a standard face detector run in its slowest form. Exporting the same
+detector to OpenVINO, with no change to the method and with 99.7\% of faces still found,
+brought the laptop to 31~FPS for Phase~2a and 22~FPS for Phase~2b, which is real time.
+Detecting on every second frame doubled that again for a small loss of coverage.
 
-For \emph{live use on glasses}, the current implementation is too slow, as the Raspberry
-Pi~5 projection with the PyTorch detector shows. The problem is not the method: the
-classification that is the contribution of this thesis takes a fraction of a millisecond,
-and detection takes almost two thirds of the time. The detector comparison
-(Table~\ref{tab:det_hw}) shows how much is available without changing the method.
-Converting the same detector to NCNN makes it more than five times faster on the Pi~5,
-roughly tripling the projected frame rate, and moving it to a neural processing unit, which
-every current camera-glasses chip includes, removes most of what remains. A further gain is
-to run the detector only on some frames: people in a conversation move little between
-consecutive frames, and the tracker already predicts where each face will be. I did not
-test this, so I cannot report how much accuracy it would cost.
+For \emph{recorded video} the system is now fast enough to process footage faster than it
+was filmed, and the offline second pass, which gives the best balance between privacy and
+utility, only makes sense for recordings anyway. This matches how blanket anonymization is
+used today: EgoBlur is applied to recordings from Meta's Aria glasses before the data is
+shared \cite{egoblur2023}.
+
+For \emph{live use on glasses}, the projections show that the remaining question is where
+each stage runs. On the glasses' CPU alone the pipeline would manage 4 to 6~FPS. With the
+detector on the NPU that every current camera-glasses chip includes, Phase~2a is projected
+at about 18~FPS, enough for a live view. Phase~2b then becomes limited by landmark
+extraction on the CPU, and the natural next step is to run that model on the NPU or GPU as
+well, which MediaPipe supports on mobile devices \cite{lugaresi2019mediapipe}. Since the
+ablation showed that the landmark cues changed very few decisions, a product could also
+run them only on faces near the decision threshold rather than on every face.
+
+Two choices that look like easy speed-ups are not acceptable for a privacy system.
+Shrinking the detector's input lost up to half of the faces, almost all of them small and
+distant, which are exactly the bystanders the system is meant to protect. And skipping
+detection on more than every second frame left a growing share of faces uncovered on the
+skipped frames. Speed has to be judged against faces found, not on its own.
 
 Table~\ref{tab:glasses} compares my evaluation hardware with current camera glasses.
 
@@ -670,11 +737,12 @@ Meta Aria Gen~2 \cite{aria2} & custom co-processor & custom & 6-8~h & on the dev
 The comparison supports three points. First, the Pi~5 is a reasonable stand-in for the CPU
 of these glasses: its four Cortex-A76 cores at 2.4~GHz are of the same class as the AR1's
 four cores at 1.9~GHz, which is why the Ray-Ban Meta projection sits slightly below the
-Pi~5. Second, every glasses platform has a neural processing unit and my evaluation used
-none, so the CPU-only figures are a worst case. Third, battery capacity is a tighter limit
+Pi~5. Second, every glasses platform has a neural processing unit, and moving detection onto
+it is what brings the projected glasses figures close to a live frame rate. Third, battery capacity is a tighter limit
 than speed. Spectacles run for about 45 minutes, and the Ray-Ban Meta sends most of its
-vision processing to the phone or the cloud. Running my pipeline continuously would compete
-for the same battery, which makes running the detector less often even more important.
+vision processing to the phone or the cloud. Running my pipeline continuously would compete for the
+same battery, which makes running the detector less often, as in the every-second-frame
+configuration, even more useful.
 Keeping the processing on the glasses has a privacy benefit of its own: bystanders' faces
 never leave the device, which Meta itself identifies as a central concern for camera
 glasses \cite{meta_bystander}.
@@ -726,8 +794,9 @@ for a single frame, the partner has to be confirmed again, which is usually quic
 briefly blur them.
 
 \paragraph{Speed and energy.}
-The Raspberry Pi~5 and glasses figures are projections built from published benchmarks and
-stated assumptions, not measurements on those devices, and the battery-power runs were
-affected by the processor heating up. % TODO(Akash): update once the power measurement is run.
+The Raspberry Pi~5 and glasses figures are projections built from published benchmarks
+and stated assumptions, not measurements on those devices, and the battery-power runs come
+from my first benchmark and were affected by the processor heating up. The labelled
+accuracy evaluation used the original detector, not the faster OpenVINO version. % TODO(Akash): update once the power measurement is run.
 I have not measured how much energy the pipeline uses, which matters at least as much as
 speed for a device with a 45-minute battery.

@@ -148,6 +148,14 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 - Figures: `python utils/make_thesis_figures.py` → `thesis_revised/figures/*.pdf` (agreement, face size, trade-off, latency, throughput). No figure shows a face.
 - LaTeX could not be compiled locally (no TeX; downloading Tectonic was blocked). Compile in Overleaf.
 
+## Speed optimisation (2026-10-30) — supersedes the 86.0 ms / 11.62 FPS table
+
+- `python eval/benchmark_optimised.py` (30 warm-up + 300 frames, 2 runs, mains) → `logs/benchmark_optimised.csv`. Exported detectors are in `models/exported/` (ONNX 640, OpenVINO 640/416/320; regenerate with Ultralytics export; onnxruntime/openvino are now pip-installed).
+- Clean PyTorch baseline: detect 46.9, read 8.7, track 0.27, cls+blur 0.9, landmarks 14.7 ms → **17.6 / 14.0 FPS** (2a/2b). The old 20.1 ms "tracking" was a start-up artefact (no warm-up).
+- **OpenVINO 640: detect 21.2 ms → 31.1 / 22.4 FPS, face recall 99.7%** (chosen). ONNX Runtime: no gain (52 ms). 416 px: 44.8/27.4 FPS but recall 64.3% → rejected; 320 px recall 50.3% → rejected. Every 2nd frame: 49.3/36.6 FPS, 97.9% coverage on skipped frames; every 3rd: 58.8/47.7, 93.1%.
+- New projections (others ×3.5; every frame others 9.9/24.5 ms, every 2nd 9.8/16.8): Pi5 PyTorch 1.8/1.7, Pi5 NCNN 7.8/5.6, Pi5 NCNN every2 12.3/9.4; AR1 CPU 6.1/4.4; AR1 NPU (upper bound) 18.1/8.4; AR1 NPU every2 20.4/12.5; Spectacles 6.1-18.1 / 4.4-8.4; Aria not projected.
+- The labelled accuracy evaluation was NOT re-run with the OpenVINO detector (stated as a limitation). The main pipeline (main.py) still uses PyTorch.
+
 ## Rules for working on this project
 
 - **University thesis template (uopThesis class, given by the university, 2026-10-26):** book-style (`\chapter`), one file per chapter in `chapters/` added to main.tex with `\include{chapters/X.tex}`, natbib author-year citations (`\citep`), BibTeX `References.bib` with `apalike`, images in `images/`. `chapters_4_5_6.tex` stays the working copy; after every edit run `python -m utils.export_thesis_chapters`, which writes `thesis/chapters/{Results,Discussion,Conclusion}.tex` (section levels shifted, `Section~4.x` → `

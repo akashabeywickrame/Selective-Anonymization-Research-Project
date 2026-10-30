@@ -38,15 +38,16 @@ threshold on clips it was not chosen from.
 
 \paragraph{RQ3: How much computation does it need, and is it feasible on wearable-class
 hardware?}
-The classification itself costs almost nothing: 0.02~ms per frame. The cost lies in face
-detection and, for Phase~2b, in landmark extraction. On a laptop CPU the pipeline runs at
-9.4 to 11.6 frames per second, which is practical for recorded video but not for live
-display. On a Raspberry Pi~5 the current implementation would reach only about 1.5 frames
-per second. Published benchmarks show that converting the detector to a faster format alone
-would roughly triple this, and that the neural processing units already present in
-camera-glasses chips could remove most of the detection cost. Live operation on glasses is
-therefore feasible in principle, but it needs that engineering work and has not been
-demonstrated here.
+The classification itself costs almost nothing; the cost lies in face detection and,
+for Phase~2b, in landmark extraction. With the detector exported to OpenVINO, the pipeline
+runs in real time on a laptop CPU, at 31~FPS for Phase~2a and 22~FPS for Phase~2b, while
+still finding 99.7\% of the faces the original detector found. On the CPU of current
+camera glasses alone it is projected at only 4 to 6~FPS, but with detection on the neural
+processing unit these chips already contain, Phase~2a is projected at about 18~FPS, enough
+for a live view, and Phase~2b at 8 to 12~FPS. Live operation on glasses is therefore
+feasible, with landmark extraction as the remaining stage to move off the CPU. These device
+figures are projections from published benchmarks and have not been measured on the
+devices themselves.
 
 \subsection{Contributions}
 
@@ -86,9 +87,10 @@ useful experiment is to measure how much partner preservation each extra second 
 buys.
 
 \paragraph{Measure on real hardware.}
-I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and
-measure both frame rate and power draw, then test running the detector only on every second
-or third frame and measure what that costs in accuracy.
+I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and on
+camera glasses with the detector on the NPU, measuring frame rate and power draw, and repeat
+the labelled evaluation with the optimised detector and with detection on every second
+frame.
 
 \paragraph{Broaden the dataset.}
 The dataset lacks outdoor conversations and indoor crowds in which the wearer talks to no
