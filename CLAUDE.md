@@ -167,6 +167,16 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 - Offline, one decision per person: retro latch 49/20/2/31 (93.94/71.01); +group 54/15/2/31 (93.94/78.26); **+track joining (no face recognition: new track starts ≤5 s after another ended, centre distance < one face width, width ratio 0.5-2) 59/10/3/30 → PSR 90.91, IPR 85.51, F1 90.08** = the thesis's offline second pass now. Joining gap 1-20 s: IPR 84.06-86.96, PSR 87.88-93.94. Adding the CV adaptive threshold on top gave no gain (59/10/4/29).
 
+## OpenVINO accuracy and robustness analyses (2026-10-30)
+
+- `python eval/score_openvino.py` (after `eval/rerun_openvino.py`): all 102 clips matched (mean IoU 0.97), **same decision as the original detector on 102/102** → identical scores. Written into results §sec:res_improve; the limitation now says only every-2nd-frame detection was not re-evaluated.
+- `python eval/extended_eval.py` → logs/extended_eval.csv, written as results §sec:res_robust (tables per_annotator, bootstrap, by_size, per_video, dataset_behaviour) + methodology paragraph (video-level bootstrap, cites efron1993) + one discussion paragraph:
+  - per annotator: live PSR 94.29-96.97 / IPR 53.42-58.46; second pass PSR 86.49-96.55 / IPR 82.19-87.69. System-vs-majority κ: live 0.435, second pass 0.724. Leave-one-annotator-out changes 0 labels (A, B) or 2 (C, D, E).
+  - video bootstrap (5000, seed 2026): live PSR 90.6-100, IPR 40.7-72.6, F1 57.1-83.3; second pass PSR 80.0-100, IPR 75.4-93.9, F1 82.3-95.6.
+  - by size: live IPR 0% (<0.6%), 23.08% (0.6-1.2), 81.48% (1.2-2.5), 100% (>2.5); second pass 60/80.77/88.89/100.
+  - whole dataset: bystander videos 7/80 tracks ever unblurred, detections visible 1.5% live / 4.9% second pass; interaction 226/487 → 306/487 tracks, 40.1% → 72.6% detections visible.
+- **Owner (2026-10-30): chapters no longer start on odd pages** (no blank pages); `\chapterstart` is now just `\clearpage`. This overrides the supervisor's earlier odd-page comment. Owner also wants a longer evaluation; page count may grow.
+
 ## Rules for working on this project
 
 - **University thesis template (uopThesis class, given by the university, 2026-10-26):** book-style (`\chapter`), one file per chapter in `chapters/` added to main.tex with `\include{chapters/X.tex}`, natbib author-year citations (`\citep`), BibTeX `References.bib` with `apalike`, images in `images/`. `chapters_4_5_6.tex` stays the working copy; after every edit run `python -m utils.export_thesis_chapters`, which writes `thesis/chapters/{Results,Discussion,Conclusion}.tex` (section levels shifted, `Section~4.x` → `

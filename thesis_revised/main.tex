@@ -43,10 +43,8 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
 
-% ── Every chapter starts on a new, odd-numbered page ──────────────────────────
-\newcommand{\chapterstart}{%
-  \clearpage
-  \ifodd\value{page}\else\hbox{}\thispagestyle{empty}\clearpage\fi}
+% ── Every chapter starts on a new page (no blank pages in between) ─────────────
+\newcommand{\chapterstart}{\clearpage}
 
 % ── Shrinks a table to the text width only when it would be wider ──────────────
 \newsavebox{\fitbox}
@@ -110,7 +108,7 @@
 \listoftables
 \end{singlespace}
 
-% ── Main text (arabic page numbers, chapters start on odd pages) ──────────────
+% ── Main text (arabic page numbers, each chapter on a new page) ──────────────
 \clearpage
 \pagenumbering{arabic}
 \input{chapters/introduction}

@@ -692,6 +692,19 @@ exactly where my results lie: for small samples and for proportions near 0\% or 
 give intervals below 0\% or above 100\%, or of zero width when every case is correct. The
 Wilson interval stays inside $[0, 1]$ and remains reliable for small samples.
 
+The Wilson interval treats every clip as independent, but the clips of Set~C come from 21
+videos, and clips from the same video share the same scene, lighting and people. To check
+that this does not make the intervals too narrow, I also used a video-level bootstrap
+\cite{efron1993}: I drew 21 videos at random with replacement, pooled all their clips,
+recomputed each measure, and repeated this 5,000 times. The middle 95\% of the resulting
+values gives an interval that allows for the clustering of clips within videos.
+
+Finally, because the ground truth is itself a majority of human judgements, I scored the
+system against each annotator's labels on their own, measured the agreement between the
+system and each annotator with Cohen's~$\kappa$, and rebuilt the majority vote five times,
+each time leaving out one annotator, to see whether any single person's judgement changes
+the results.
+
 \subsubsection{Ablation and sensitivity analysis}
 \label{sec:replay}
 

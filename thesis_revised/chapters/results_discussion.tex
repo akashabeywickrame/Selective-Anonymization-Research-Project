@@ -434,7 +434,12 @@ sweep (Table~\ref{tab:sweep}), which shows how much a threshold chosen on the ev
 clips flatters itself.
 
 \paragraph{The faster detector.}
-%% OPENVINO_RESULT
+I re-ran all 21 videos with the OpenVINO detector and scored the new run against the same
+Set~C labels. Every one of the 102 labelled people was found again in the new run (mean
+box overlap 0.97 with the original track), and the system made the same keep or blur
+decision for all 102. The scores are therefore identical to the live system's: TP~39,
+FN~30, FP~1, TN~32, PSR 96.97\%, IPR 56.52\% and F$_1$ 71.56\%. The speed gain in
+Section~\ref{sec:res_speed} comes at no cost in accuracy.
 
 \subsection{Comparison with Blanket Blurring}
 \label{sec:res_baseline}
@@ -459,6 +464,208 @@ Phase~2b, all cues                & C   & 96.97\%  & 56.52\% & 71.56\% \\
 Phase~2b with offline second pass & C   & 90.91\%  & 85.51\% & 90.08\% \\
 \bottomrule
 \end{tabular}
+\end{singlespace}
+\end{table}
+
+\subsection{Robustness of the Set~C Results}
+\label{sec:res_robust}
+
+The Set~C results rest on 102 clips from 21 videos and on a majority vote of five people.
+This section checks how far they depend on who labelled the clips, on which videos the
+clips came from, and on the size of the faces, and how the system behaves on the whole
+dataset rather than only on the labelled clips. In every table, \emph{live} is the system
+as evaluated and \emph{second pass} is the offline whole-video decision of
+Section~\ref{sec:res_secondpass}.
+
+\paragraph{Dependence on the annotators.}
+Table~\ref{tab:per_annotator} scores the system against each annotator's own labels. The
+live system's PSR stayed between 94.29\% and 96.97\% and its IPR between 53.42\% and
+58.46\% whichever annotator was taken as the reference; the second pass stayed between
+86.49\% and 96.55\% PSR and between 82.19\% and 87.69\% IPR. No single person's view of who
+belongs to the wearer's group decides the result. Leaving out any one annotator and
+rebuilding the majority from the other four changed no label when annotator A (myself) or
+B was left out, and two labels when any of C, D or E was left out. In the worst case the
+live system's PSR fell from 96.97\% to 94.29\% and its IPR rose slightly to 56.72\%, and the
+second pass moved to 88.57\% PSR and 86.57\% IPR. Removing my own labels changed nothing,
+so the results do not depend on the person who designed the system.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{The system scored against each annotator's labels on their own, with Cohen's
+$\kappa$ between the system and that annotator. Annotator D left one clip unlabelled.}
+\label{tab:per_annotator}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccccccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{\textbf{Live}} & \multicolumn{3}{c}{\textbf{Second pass}} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+\textbf{Reference} & \textbf{Clips} & \textbf{PSR} & \textbf{IPR} & \textbf{$\kappa$} & \textbf{PSR} & \textbf{IPR} & \textbf{$\kappa$} \\
+\midrule
+Annotator A        & 102 & 94.59\% & 58.46\% & 0.463 & 86.49\% & 87.69\% & 0.729 \\
+Annotator B        & 102 & 94.29\% & 56.72\% & 0.431 & 88.57\% & 86.57\% & 0.727 \\
+Annotator C        & 102 & 96.97\% & 56.52\% & 0.435 & 90.91\% & 85.51\% & 0.724 \\
+Annotator D        & 101 & 96.43\% & 53.42\% & 0.366 & 92.86\% & 82.19\% & 0.669 \\
+Annotator E        & 102 & 96.55\% & 53.42\% & 0.372 & 96.55\% & 83.56\% & 0.719 \\
+\textbf{Majority of five} & \textbf{102} & \textbf{96.97\%} & \textbf{56.52\%} & \textbf{0.435} & \textbf{90.91\%} & \textbf{85.51\%} & \textbf{0.724} \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\paragraph{Agreement between the system and the annotators.}
+The $\kappa$ columns of Table~\ref{tab:per_annotator} put the system on the same scale as
+the annotators. Against the majority, the live system reached $\kappa = 0.435$, moderate
+agreement on the Landis and Koch scale, held down by the partners it leaves blurred. The
+second pass reached $\kappa = 0.724$, substantial agreement. The annotators agreed with
+each other more closely ($\kappa$ 0.818 to 0.957), so the second pass is not yet as
+reliable as a person, but it is closer to the annotators than the live system by a whole
+band of the scale.
+
+\paragraph{Clustering of clips within videos.}
+Table~\ref{tab:bootstrap} compares the Wilson intervals with the video-level bootstrap.
+For the live system the bootstrap interval for IPR (40.7\% to 72.6\%) is wider than the
+Wilson interval, as expected when clips from one video tend to succeed or fail together,
+but the conclusions do not change: the lower end of PSR stays above 90\%. For the second
+pass the bootstrap gives 75.4\% to 93.9\% for IPR and 80.0\% to 100\% for PSR, so the gain
+over the live system remains clear when whole videos, rather than single clips, are
+treated as the unit of sampling.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{95\% intervals on Set~C: Wilson intervals, which treat clips as independent,
+and video-level bootstrap intervals (5,000 resamples of the 21 videos). The Wilson
+interval is not defined for F$_1$.}
+\label{tab:bootstrap}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{System} & \textbf{Measure} & \textbf{Value} & \textbf{Wilson} & \textbf{Video bootstrap} \\
+\midrule
+Live        & PSR     & 96.97\% & 84.7-99.5\% & 90.6-100\% \\
+            & IPR     & 56.52\% & 44.8-67.6\% & 40.7-72.6\% \\
+            & F$_1$   & 71.56\% &             & 57.1-83.3\% \\
+Second pass & PSR     & 90.91\% & 76.4-96.9\% & 80.0-100\% \\
+            & IPR     & 85.51\% & 75.3-91.9\% & 75.4-93.9\% \\
+            & F$_1$   & 90.08\% &             & 82.3-95.6\% \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\paragraph{Results by face size.}
+Table~\ref{tab:by_size} splits the clips by the median size of the face during the clip.
+Above the area threshold the live system kept 33 of 38 partners (86.8\%), and every
+partner whose face filled more than 2.5\% of the frame. Below it, the live system kept only
+6 of 31 partners, and none below 0.6\%. This is the error analysis of
+Section~\ref{sec:res_errors} seen from the other side: the live rule works well on the
+faces it was designed for and the misses are concentrated in one band of sizes. The second
+pass raised IPR in the 0.6\% to 1.2\% band from 23.08\% to 80.77\% without exposing any
+bystander in that band, because many of these partners are confirmed at some other moment
+when they lean in or come closer. Most bystanders are small (27 of the 33 below 0.6\%), and
+the live system blurred all of them.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Set~C results by the median face area during the clip, as a share of the frame.
+Counts are TP / FN / FP / TN.}
+\label{tab:by_size}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Face area} & \textbf{Clips} & \textbf{Partners} & \textbf{Live} & \textbf{Live IPR} &
+\textbf{Second pass} & \textbf{Second pass IPR} \\
+\midrule
+below 0.6\%     & 32 & 5  & 0 / 5 / 0 / 27   & 0.00\%   & 3 / 2 / 1 / 26  & 60.00\% \\
+0.6\% to 1.2\%  & 30 & 26 & 6 / 20 / 0 / 4   & 23.08\%  & 21 / 5 / 0 / 4  & 80.77\% \\
+1.2\% to 2.5\%  & 28 & 27 & 22 / 5 / 1 / 0   & 81.48\%  & 24 / 3 / 1 / 0  & 88.89\% \\
+above 2.5\%     & 12 & 11 & 11 / 0 / 0 / 1   & 100.00\% & 11 / 0 / 1 / 0  & 100.00\% \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\paragraph{Results per video.}
+Table~\ref{tab:per_video} gives the counts for every video. All seven bystander videos and
+the interaction video with no partner in its sample (video~6, where the wearer browses a
+shop) were handled almost perfectly: 25 of their 26 bystanders stayed blurred. The single
+exposure among them was a passer-by in bystander video~3 who walked towards the camera and
+was unblurred for exactly half of the clip. Among the interaction videos, the live system
+kept every sampled partner in videos 1, 5 and 9 but only one of six in videos 11 and 12.
+The second pass helped most in exactly those videos (from 1 to 5 of 6 in video~11 and from
+1 to 4 in video~12) and in video~14 (from 2 to 5). Video~13 is the one where it did not
+help: its missed partners were never confirmed at any moment, so there was nothing to
+extend, and joining tracks exposed one bystander.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Set~C counts (TP / FN / FP / TN) per video. B = bystander video,
+I = interaction video.}
+\label{tab:per_video}
+\renewcommand{\arraystretch}{1.2}
+\fitwidth{\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Video} & \textbf{Clips} & \textbf{Partners} & \textbf{Live} & \textbf{Second pass} \\
+\midrule
+B1  & 4 & 0 & 0 / 0 / 0 / 4 & 0 / 0 / 0 / 4 \\
+B2  & 2 & 0 & 0 / 0 / 0 / 2 & 0 / 0 / 0 / 2 \\
+B3  & 4 & 0 & 0 / 0 / 1 / 3 & 0 / 0 / 1 / 3 \\
+B4  & 1 & 0 & 0 / 0 / 0 / 1 & 0 / 0 / 0 / 1 \\
+B5  & 4 & 0 & 0 / 0 / 0 / 4 & 0 / 0 / 0 / 4 \\
+B6  & 2 & 0 & 0 / 0 / 0 / 2 & 0 / 0 / 0 / 2 \\
+B7  & 4 & 0 & 0 / 0 / 0 / 4 & 0 / 0 / 0 / 4 \\
+I1  & 6 & 5 & 5 / 0 / 0 / 1 & 5 / 0 / 0 / 1 \\
+I2  & 6 & 6 & 3 / 3 / 0 / 0 & 5 / 1 / 0 / 0 \\
+I3  & 6 & 6 & 5 / 1 / 0 / 0 & 5 / 1 / 0 / 0 \\
+I4  & 6 & 6 & 3 / 3 / 0 / 0 & 5 / 1 / 0 / 0 \\
+I5  & 6 & 4 & 4 / 0 / 0 / 2 & 4 / 0 / 0 / 2 \\
+I6  & 5 & 0 & 0 / 0 / 0 / 5 & 0 / 0 / 0 / 5 \\
+I7  & 5 & 3 & 2 / 1 / 0 / 2 & 3 / 0 / 1 / 1 \\
+I8  & 6 & 6 & 4 / 2 / 0 / 0 & 6 / 0 / 0 / 0 \\
+I9  & 5 & 5 & 5 / 0 / 0 / 0 & 5 / 0 / 0 / 0 \\
+I10 & 6 & 6 & 3 / 3 / 0 / 0 & 6 / 0 / 0 / 0 \\
+I11 & 6 & 6 & 1 / 5 / 0 / 0 & 5 / 1 / 0 / 0 \\
+I12 & 6 & 6 & 1 / 5 / 0 / 0 & 4 / 2 / 0 / 0 \\
+I13 & 6 & 4 & 1 / 3 / 0 / 2 & 1 / 3 / 1 / 1 \\
+I14 & 6 & 6 & 2 / 4 / 0 / 0 & 5 / 1 / 0 / 0 \\
+\midrule
+\textbf{All} & \textbf{102} & \textbf{69} & \textbf{39 / 30 / 1 / 32} & \textbf{59 / 10 / 3 / 30} \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\paragraph{Behaviour over the whole dataset.}
+The labelled clips are a sample. Table~\ref{tab:dataset_behaviour} shows what the system
+did over all 72.8 minutes of the formal dataset, counting every track that lasted at least
+two seconds and every face detection. Every person in the bystander videos is a stranger,
+so any face kept visible there is an exposure. Over the seven bystander videos, 73 of 80
+such tracks were never unblurred, and 98.5\% of all face detections stayed blurred. The
+second pass leaves the same 7 tracks unblurred, but for their whole time on screen, so the
+share of blurred detections falls to 95.1\%. In the interaction videos, which contain both
+partners and strangers, the share of face detections left visible rose from 40.1\% to
+72.6\% with the second pass, in line with the rise in IPR on the labelled clips.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{System behaviour over the whole formal dataset (tracks of at least 2~s and all
+face detections).}
+\label{tab:dataset_behaviour}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{\textbf{Tracks ever visible}} & \multicolumn{2}{c}{\textbf{Detections visible}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+\textbf{Videos} & \textbf{Tracks} & \textbf{Live} & \textbf{Second pass} & \textbf{Live} & \textbf{Second pass} \\
+\midrule
+Bystander (7)    & 80  & 7 (8.8\%)    & 7 (8.8\%)    & 1.5\%  & 4.9\% \\
+Interaction (14) & 487 & 226 (46.4\%) & 306 (62.8\%) & 40.1\% & 72.6\% \\
+\bottomrule
+\end{tabular}}
 \end{singlespace}
 \end{table}
 
@@ -556,9 +763,9 @@ leave many bystanders unblurred; I rejected both for that reason. Running the Op
 detector on every second frame, and keeping the previous decisions and blur boxes on the
 frames in between, reached 49.3~FPS for Phase~2a and 36.6~FPS for Phase~2b. On the skipped
 frames, 97.9\% of faces were still covered by a held blur box; on every third frame this
-fell to 93.1\%. The accuracy results earlier in this chapter were produced with the
-original detector; with OpenVINO finding 99.7\% of the same faces, the decisions are
-expected to be nearly identical, but I did not repeat the labelled evaluation with it.
+fell to 93.1\%. When I repeated the labelled evaluation with the OpenVINO detector, it made the same
+decision as the original detector on all 102 clips (Section~\ref{sec:res_improve}), so the
+accuracy results in this chapter hold for the faster version as well.
 
 \paragraph{Battery power.}
 My first benchmark, without warm-up frames, also included runs with the laptop unplugged.
@@ -738,6 +945,15 @@ The delay experiment connects the two settings: a live system that holds its out
 for a few seconds recovers part of the offline gain, and simply keeping the latch for as
 long as the tracker keeps a face's number recovers some partners at no cost at all.
 
+The robustness checks in Section~\ref{sec:res_robust} make this picture firmer. The
+balance between the two measures did not depend on whose labels were used, it held when
+whole videos rather than single clips were resampled, and it was visible in the system's
+behaviour on all 72.8 minutes of video, not only on the labelled sample. They also show
+where the remaining gap lies. Faces that fill more than 1.2\% of the frame are handled
+well even by the live rule; the difficulty is the friend sitting one seat further away,
+whose face is between 0.6\% and 1.2\% of the frame. That is the band where the second pass
+helps most and where a better live cue would pay off most.
+
 \subsubsection{Comparison with prior work}
 \label{sec:disc_prior}
 
@@ -768,8 +984,8 @@ The first benchmark made the system look impractical, and the optimisation resul
 why that impression was wrong. The method itself was never the problem: the classification
 that is the contribution of this thesis takes a fraction of a millisecond. Almost all of
 the time went into a standard face detector run in its slowest form. Exporting the same
-detector to OpenVINO, with no change to the method and with 99.7\% of faces still found,
-brought the laptop to 31~FPS for Phase~2a and 22~FPS for Phase~2b, which is real time.
+detector to OpenVINO, with no change to the method and with every labelled decision
+unchanged, brought the laptop to 31~FPS for Phase~2a and 22~FPS for Phase~2b, which is real time.
 Detecting on every second frame doubled that again for a small loss of coverage.
 
 For \emph{recorded video} the system is now fast enough to process footage faster than it
@@ -886,7 +1102,7 @@ briefly blur them.
 \paragraph{Speed and energy.}
 The Raspberry Pi~5 and glasses figures are projections built from published benchmarks
 and stated assumptions, not measurements on those devices, and the battery-power runs come
-from my first benchmark and were affected by the processor heating up. The labelled
-accuracy evaluation used the original detector, not the faster OpenVINO version. % TODO(Akash): update once the power measurement is run.
+from my first benchmark and were affected by the processor heating up. The labelled evaluation was repeated with the OpenVINO detector, but not with detection on
+every second frame. % TODO(Akash): update once the power measurement is run.
 I have not measured how much energy the pipeline uses, which matters at least as much as
 speed for a device with a 45-minute battery.

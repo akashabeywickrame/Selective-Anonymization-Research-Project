@@ -36,7 +36,8 @@ latch for as long as the tracker keeps a face raised it to 60.87\% at no cost to
 bystanders. Selective anonymization therefore gives up a few
 percentage points of bystander protection to recover most of what blanket blurring
 destroys. These figures rest on labels from five annotators with almost perfect agreement,
-but on 21 videos, so they should be confirmed on more varied footage.
+held whichever annotator was taken as the reference and when whole videos were resampled,
+but come from 21 videos, so they should be confirmed on more varied footage.
 
 \paragraph{RQ3: How much computation does it need, and is it feasible on wearable-class
 hardware?}
@@ -89,8 +90,7 @@ given more time to accumulate evidence on small faces.
 \paragraph{Measure on real hardware.}
 I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and on
 camera glasses with the detector on the NPU, measuring frame rate and power draw, and repeat
-the labelled evaluation with the optimised detector and with detection on every second
-frame.
+the labelled evaluation with detection on every second frame.
 
 \paragraph{Broaden the dataset.}
 The dataset lacks outdoor conversations and indoor crowds in which the wearer talks to no
