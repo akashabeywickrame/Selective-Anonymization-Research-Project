@@ -1,0 +1,4 @@
+condition,seconds,samples,mean_w,sd_w,fps,pipeline_w,joules_per_frame
+idle,120.0,100,19.926,7.073,0.0,,
+phase2a,120.4,88,24.408,2.031,11.21,4.482,0.3998
+phase2b,122.6,92,24.896,0.166,9.55,4.97,0.5204

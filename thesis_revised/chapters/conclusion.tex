@@ -44,7 +44,9 @@ hardware?}
 The classification itself costs almost nothing; the cost lies in face detection and,
 for Phase~2b, in landmark extraction. With the detector exported to OpenVINO, the pipeline
 runs in real time on a laptop CPU, at 31~FPS for Phase~2a and 22~FPS for Phase~2b, while
-still finding 99.7\% of the faces the original detector found. On the CPU of current
+still finding 99.7\% of the faces the original detector found and making the same decision
+on every labelled clip. On battery, the pipeline added about 5~W to the laptop's draw, or
+about half a joule per frame. On the CPU of current
 camera glasses alone it is projected at only 4 to 6~FPS, but with detection on the neural
 processing unit these chips already contain, Phase~2a is projected at about 18~FPS, enough
 for a live view, and Phase~2b at 8 to 12~FPS. Live operation on glasses is therefore
