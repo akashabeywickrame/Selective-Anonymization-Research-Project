@@ -1,0 +1,466 @@
+% ==============================================================================
+%  CHAPTER 3 — METHODOLOGY
+% ==============================================================================
+\section{Methodology}
+\label{sec:method}
+
+I followed a build-and-evaluate approach. I assembled a dataset of first-person video
+(Section~\ref{sec:dataset}), built a five-stage pipeline that detects, tracks, classifies
+and selectively blurs faces (Sections~\ref{sec:arch} to~\ref{sec:anon}), and evaluated it
+against human judgements and against a blanket-blurring baseline
+(Section~\ref{sec:evaldesign}).
+
+\subsection{Dataset}
+\label{sec:dataset}
+
+\paragraph{Source and selection.}
+No public dataset labels which people in first-person video are interacting with the
+camera wearer and which are bystanders, so I assembled my own. I collected 21 videos from
+publicly available online sources, mainly YouTube; I did not record any footage myself.
+A video was included if it was filmed from a first-person viewpoint (a camera worn on the
+head or held at eye level), contained faces large enough to be detected, and clearly
+belonged to one of two categories:
+\begin{itemize}
+  \item \textbf{Interaction} (14 videos): the wearer spends time with other people, mostly
+        playing card or board games around a table, and in some videos shopping in small
+        stores and talking to staff. These videos contain both partners and bystanders,
+        for example other customers in a shop.
+  \item \textbf{Bystander} (7 videos): the wearer walks through busy outdoor places such
+        as street markets and city streets, by day and at night, without talking to
+        anyone. Every face in these videos is a bystander.
+\end{itemize}
+Interaction videos were trimmed to five-minute segments. Bystander videos were used at
+their original length of 6 to 78 seconds. Source resolutions ranged from
+$1280 \times 720$ to $3840 \times 2160$, and I resized every frame to $1280 \times 720$
+before processing so that all thresholds apply to the same frame size. % TODO(Akash): if
+% you remember the search terms or channels used to find the videos, add one sentence.
+
+\paragraph{Size of the dataset.}
+Counting only videos would understate how much data the system processes, because each
+video contains many people and each person appears in many frames. Table~\ref{tab:dataset}
+gives the dataset at three levels: videos, frames, and face tracks. A face track is one
+person followed through consecutive frames by the tracker, and it is the unit the
+classifier makes decisions about. Across the 21 videos the pipeline processed
+131{,}187 frames, made 185{,}865 face detections and followed 2{,}736 face tracks, of
+which 600 were visible for at least two seconds.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Size of the evaluation dataset at the level of videos, frames and faces.}
+\label{tab:dataset}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+ & \textbf{Interaction} & \textbf{Bystander} & \textbf{Total} \\
+\midrule
+Videos                              & 14         & 7        & 21 \\
+Total duration (minutes)            & 70.0       & 2.8      & 72.8 \\
+Frames                              & 125{,}986  & 5{,}201  & 131{,}187 \\
+Frames containing at least one face & 90{,}398   & 3{,}959  & 94{,}357 \\
+Face detections                     & 169{,}247  & 16{,}618 & 185{,}865 \\
+Face tracks                         & 2{,}288    & 448      & 2{,}736 \\
+Face tracks visible for 2~s or more & 508        & 92       & 600 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\paragraph{Balance.}
+By duration the dataset is dominated by interaction video (70 of 73 minutes). The
+imbalance between partners and bystanders is smaller than this suggests, because the
+interaction videos also contain many bystanders: other customers, people at other tables
+and passers-by. I handled the remaining imbalance in three ways. First, the labelled
+evaluation samples were drawn from every video, so that short bystander videos are
+represented alongside long interaction videos. Second, I report bystander protection and
+partner preservation as two separate rates (Section~\ref{sec:metrics}), so a large class
+cannot hide poor performance on a small one, which would happen with overall accuracy.
+Third, I report results separately for the two video categories.
+
+\paragraph{Ground truth.}
+Whether a person is interacting with the wearer is a human judgement, so the ground truth
+comes from human annotators. I built three labelled sets over the course of the project,
+each improving on the previous one. They are described in Section~\ref{sec:groundtruth}
+and summarised in Table~\ref{tab:gtsets}. Their accuracy is checked by measuring agreement
+between independent annotators (Section~\ref{sec:stats}).
+
+\paragraph{Handling of personal data.}
+The videos show members of the public. I kept the videos and all frames derived from them
+on my own computer, shared clips only with the annotators for labelling, and did not
+publish any frame that shows a face.
+
+\subsection{System Architecture}
+\label{sec:arch}
+
+The pipeline processes one frame at a time in five stages (Figure~\ref{fig:pipeline}).
+Each frame is passed through detection, tracking, cue extraction, classification and
+anonymization, and the output is the same frame with only bystander faces blurred.
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{\begin{minipage}{0.9\linewidth}\centering\vspace{4pt}
+    \textit{Frame} $\rightarrow$ \textbf{Detection} $\rightarrow$ \textbf{Tracking}
+    $\rightarrow$ \textbf{Cue Extraction} $\rightarrow$ \textbf{Classification}
+    $\rightarrow$ \textbf{Anonymization} $\rightarrow$ \textit{Output}\vspace{4pt}
+  \end{minipage}}
+  \caption{The five stages of the pipeline.}
+  \label{fig:pipeline}
+\end{figure}
+
+Identity and appearance are kept separate. The tracker gives each face a number that only
+says ``this is the same box as in the previous frame''; the cue stage looks at the face in
+the current frame. No stage computes a face embedding or compares faces with each other,
+so the system never learns who anyone is, and the track numbers are discarded when the
+video ends.
+
+I implemented the pipeline in Python 3.13 with OpenCV 4.13 for video input and image
+processing, Ultralytics 8.4 for face detection \cite{yolov8}, my own implementation of
+SORT for tracking, and the MediaPipe 0.10 Face Landmarker for facial landmarks
+\cite{lugaresi2019mediapipe}. Everything runs on the CPU; no GPU or neural accelerator is
+used.
+
+\subsection{Face Detection}
+\label{sec:detection}
+
+YOLOv8n-face (Section~\ref{sec:lit_detect}) produces a bounding box and a confidence score for every face.
+Each frame is resized to the detector's input of $640 \times 640$ pixels, and overlapping
+boxes are merged by non-maximum suppression (NMS). I set the confidence threshold to
+$\tau_{\mathrm{det}} = 0.45$ and the NMS overlap threshold to $\tau_{\mathrm{NMS}} = 0.45$
+empirically, aiming to suppress low-confidence false detections without losing faces that
+are partly hidden or poorly lit. At most 20 faces are kept per frame.
+
+\subsection{Multi-Face Tracking}
+\label{sec:tracking}
+
+The cues described below are accumulated over time, so each face needs a stable identity
+across frames. I use SORT \cite{sort2016}, which predicts each face box with a
+constant-velocity Kalman filter and matches predictions to new detections with the
+Hungarian algorithm, using the overlap (IoU) between boxes as the matching cost. A track
+that loses its detection is kept for up to 90 frames (3~s at 30~fps), so that a face
+briefly hidden behind a hand or another person keeps its identity. A new track is only
+passed to the classifier after three consecutive detections, which filters out one-frame
+false detections. SORT uses box motion only, so no appearance model of the face is ever
+built.
+
+\subsection{Interaction Cues}
+\label{sec:cues}
+
+For each tracked face the system computes four cues. I developed them in two phases: the
+two geometry cues first (Phase~2a), and the two landmark cues afterwards (Phase~2b).
+
+\subsubsection*{Geometry cues (Phase 2a)}
+
+These cues use only the bounding box. They rely on the centre bias of first-person video:
+the wearer tends to face the person they are talking to, so that person appears large and
+near the centre of the frame \cite{li2013gaze,fathi2012social}.
+
+\textbf{Proximity.} For a face box $[x_1, y_1, x_2, y_2]$ in a $W \times H$ frame, the
+area ratio is
+\begin{equation}
+  r_{\mathrm{area}} = \frac{(x_2 - x_1)(y_2 - y_1)}{W \cdot H}.
+  \label{eq:area_ratio}
+\end{equation}
+In my videos, a person in conversation with the wearer typically produced values between
+0.02 and 0.08, while distant bystanders were usually below 0.003. I set the threshold to
+$\tau_{\mathrm{area}} = 0.012$ by looking at the distribution of each track's largest area
+ratio across the videos.
+
+\textbf{Centrality.} The distance of the face centre $(\bar{x}, \bar{y})$ from the frame
+centre, normalised by the half-diagonal, is
+\begin{equation}
+  d_{\mathrm{center}} = \frac{\sqrt{(\bar{x} - W/2)^2 + (\bar{y} - H/2)^2}}
+                             {\sqrt{(W/2)^2 + (H/2)^2}},
+  \label{eq:center_dist}
+\end{equation}
+which is 0 at the centre and about 1 at the corners. A face counts as central when
+$d_{\mathrm{center}} \le \tau_{\mathrm{center}} = 0.45$.
+
+\subsubsection*{Landmark cues (Phase 2b)}
+
+For each tracked face, the box is enlarged by 15\% of its longer side so that the chin and
+forehead are included, and the crop is passed to the MediaPipe Face Landmarker
+\cite{kartynnik2019facemesh}, which returns 478 facial landmarks. Each crop is processed
+on its own, since SORT already handles tracking. If no face is found in the crop, the
+landmark cues are left empty for that frame and the classifier falls back to the geometry
+cues.
+
+\textbf{Head yaw.} I estimate head pose by solving the Perspective-$n$-Point problem
+\cite{lepetit2009epnp} for six landmarks with known positions on a generic 3D face model:
+the nose tip, the chin, the outer corners of both eyes and both corners of the mouth
+(landmarks 4, 152, 33, 263, 61 and 291). With $\mathbf{P}_i^{3D}$ the model points and
+$\mathbf{p}_i^{2D}$ their positions in the crop, the camera matrix is approximated as
+\begin{equation}
+  K = \begin{bmatrix} f & 0 & c_x \\ 0 & f & c_y \\ 0 & 0 & 1 \end{bmatrix},
+  \quad f = W_{\mathrm{crop}}, \quad c_x = W_{\mathrm{crop}}/2, \quad c_y = H_{\mathrm{crop}}/2,
+  \label{eq:camera_matrix}
+\end{equation}
+and OpenCV's iterative solver finds the rotation $\mathbf{r}$ and translation
+$\mathbf{t}$ that minimise the reprojection error
+\begin{equation}
+  \min_{\mathbf{r}, \mathbf{t}} \sum_{i=1}^{6}
+  \left\| \mathbf{p}_i^{2D} - \pi\!\left(K,\, \mathbf{r},\, \mathbf{t},\, \mathbf{P}_i^{3D}\right) \right\|^2,
+  \label{eq:pnp}
+\end{equation}
+where $\pi(\cdot)$ is perspective projection. The rotation is converted to a matrix with
+the Rodrigues formula and decomposed into Euler angles; the yaw angle
+$\theta_{\mathrm{yaw}}$ (turning left or right) is the cue. A face with
+$|\theta_{\mathrm{yaw}}| > \tau_{\mathrm{yaw}} = 40^\circ$ is treated as looking away from
+the wearer.
+
+\textbf{Mouth aspect ratio (MAR).} Following the eye aspect ratio of Soukupov\'a and
+\v{C}ech \cite{soukupova2016}, I measure how far the mouth is open relative to its width.
+The upper inner lip $\bar{u}$ is the mean of landmarks 82, 13 and 312, the lower inner lip
+$\bar{l}$ the mean of 87, 14 and 317, and the mouth corners are landmarks 78 and 308:
+\begin{equation}
+  \mathrm{MAR} = \frac{\lVert \bar{u} - \bar{l} \rVert}{\lVert p_{78} - p_{308} \rVert}.
+  \label{eq:mar}
+\end{equation}
+MAR is close to zero when the mouth is closed. In my videos, values above about 0.08
+corresponded to an open mouth during speech.
+
+\subsection{Classification}
+\label{sec:classification}
+
+The classifier assigns each tracked face one of two labels in every frame:
+\textsc{Interactor} (keep visible) or \textsc{Bystander} (blur). It follows three rules
+of thumb: when in doubt, blur; never let one noisy frame change a label; and let the
+landmark cues veto or support the geometry decision.
+
+\subsubsection*{Decision for a single frame}
+
+For each frame the cues are checked in this order:
+\begin{enumerate}
+  \item \textbf{Yaw veto.} If landmarks are available and
+        $|\theta_{\mathrm{yaw}}| > 40^\circ$, the face is a bystander for this frame.
+  \item \textbf{Geometry rule.} The face is an interactor if it is both close and central:
+        \begin{equation}
+          f_{\mathrm{geo}} = \bigl[r_{\mathrm{area}} \geq \tau_{\mathrm{area}}\bigr]
+                             \wedge
+                             \bigl[d_{\mathrm{center}} \leq \tau_{\mathrm{center}}\bigr].
+          \label{eq:geo_rule}
+        \end{equation}
+  \item \textbf{Speaking boost.} The system keeps the last $N_w = 30$ MAR values of each
+        track and computes the fraction in which the mouth was open,
+        \begin{equation}
+          s_{\mathrm{vad}} = \frac{1}{|\mathcal{W}|} \sum_{m \in \mathcal{W}}
+                             \mathbf{1}\!\left[m \geq \tau_{\mathrm{MAR}}\right],
+          \label{eq:vvad}
+        \end{equation}
+        once at least 10 values are available. If $s_{\mathrm{vad}} \geq
+        \tau_{\mathrm{vad}} = 0.30$ and the face passes the proximity test, it is an
+        interactor even if it is slightly off-centre, up to
+        $1.2\,\tau_{\mathrm{center}}$. This covers a partner who moves to the side while
+        speaking.
+  \item \textbf{Default.} Otherwise the face is a bystander.
+\end{enumerate}
+
+\subsubsection*{Confirmation and latching}
+
+A face changes from \textsc{Bystander} to \textsc{Interactor} only after the single-frame
+decision says interactor in $\tau_{\mathrm{enter}} = 2$ consecutive frames. A face that
+covers at least 4\% of the frame is confirmed at once, because at that distance the person
+is almost certainly face to face with the wearer. Once confirmed, a face stays an
+interactor for the rest of the video, even if the cues later fail. Without this latch, a
+partner who looked down at their cards or turned to someone else would be blurred and
+unblurred repeatedly. The latch accepts a small risk to bystander privacy in exchange for stable
+partner preservation. Table~\ref{tab:params} lists all thresholds.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Classification thresholds.}
+\label{tab:params}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} & \textbf{Cue} \\
+\midrule
+Minimum area ratio            & $\tau_{\mathrm{area}}$   & $0.012$     & Proximity \\
+Maximum centre distance       & $\tau_{\mathrm{center}}$ & $0.45$      & Centrality \\
+Instant-confirmation area     & $r_{\mathrm{instant}}$   & $0.040$     & Proximity \\
+Confirmation streak           & $\tau_{\mathrm{enter}}$  & 2 frames    & Hysteresis \\
+Maximum yaw                   & $\tau_{\mathrm{yaw}}$    & $40^\circ$  & Head pose \\
+Open-mouth threshold          & $\tau_{\mathrm{MAR}}$    & $0.08$      & Speaking \\
+Speaking window               & $N_w$                    & 30 frames   & Speaking \\
+Speaking fraction             & $\tau_{\mathrm{vad}}$    & $0.30$      & Speaking \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\subsection{Selective Anonymization and Baseline}
+\label{sec:anon}
+
+Every face labelled \textsc{Bystander} is blurred with a $51 \times 51$ Gaussian kernel
+over its box enlarged by 10\% on each side, so that hair and ears are covered too. Faces
+labelled \textsc{Interactor} are left untouched. The pipeline writes three videos from the
+same detections and tracks: the selective output, a \emph{baseline} in which every
+detected face is blurred, and a debug video that draws each decision. Because the
+baseline uses the same detector and tracker, any difference between the two outputs comes
+from the classification stage alone.
+
+\subsection{Offline Second Pass for Recorded Video}
+\label{sec:secondpass}
+
+The latch only works forward in time, so a partner is blurred until the system has seen
+enough evidence. When the whole recording is available, two further rules can be applied
+after the first pass, using only the decisions already made:
+\begin{enumerate}
+  \item \textbf{Retroactive latch.} A track confirmed as a partner at any point is kept
+        visible for its whole time on screen, including the frames before confirmation.
+  \item \textbf{Group rule.} A track that is visible for at least 10~seconds, and is on
+        screen together with a confirmed partner for at least half of that time, is
+        treated as part of the wearer's group and kept visible. Friends sitting at the same
+        table stay in view for minutes, while passers-by rarely stay for 10~seconds.
+        Requiring a confirmed partner to be present stops the rule from preserving
+        strangers who simply stay in one place, such as a shop assistant.
+\end{enumerate}
+I designed these rules after studying the errors of the video-clip evaluation
+(Section~\ref{sec:results_clips}), so their results are reported separately from the main
+evaluation.
+
+\subsection{Evaluation Design}
+\label{sec:evaldesign}
+
+\subsubsection*{Ground-truth sets}
+\label{sec:groundtruth}
+
+Table~\ref{tab:gtsets} summarises the three labelled sets.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Labelled sets used for evaluation. Each data point is one person (face track)
+judged as an interaction partner or a bystander.}
+\label{tab:gtsets}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lllcc@{}}
+\toprule
+\textbf{Set} & \textbf{What annotators saw} & \textbf{Annotators} &
+\textbf{Data points} & \textbf{Partners / bystanders} \\
+\midrule
+A: Phase 2a tracks  & Full videos             & 1 (myself)        & 66  & 26 / 40 \\
+B: Still frames     & 10 frames, faces numbered & 4 (incl.\ myself) & 29  & 7 / 22 \\
+C: Video clips      & 7~s clips with sound    & 5 (incl.\ myself) & 102 & 69 / 33 \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\textbf{Set A.} For the first evaluation I watched each video in full and labelled 66 face
+tracks across the 21 videos. % TODO(Akash): add how the 66 tracks were chosen.
+A track was labelled a partner if the person had a face-to-face conversation with the
+wearer at any point, matching the latching behaviour of the classifier. These labels
+could not be reused for Phase~2b: SORT numbers tracks in order of appearance, so when the
+detections changed slightly between the Phase~2a and Phase~2b runs, the track numbers
+shifted and no longer referred to the same people.
+
+\textbf{Set B.} For Phase~2b I first ran a blind study on still frames. One frame was
+chosen automatically from each of the first five bystander and first five interaction
+videos: the frame with the most clearly visible faces (box at least 50~pixels on each
+side, detection confidence at least 0.50, outside the first 30 frames). Each face was
+marked with a plain number, with nothing indicating the system's decision. Four annotators
+labelled each face as a partner (``actively talking to the camera wearer'') or a
+bystander, or left it blank if they could not decide.
+
+\textbf{Set C.} Still frames make it hard to tell who is talking, so I ran a larger study
+with video. From every evaluation video I sampled tracks without looking at the system's
+decisions: the four longest tracks of each bystander video, and the four longest plus two
+random tracks of each interaction video, using tracks visible for at least 60 frames with
+a median face size of at least 32~pixels. Each sampled track became a seven-second clip:
+one second of a still frame marking the target face, then six seconds of the original,
+unblurred video with its sound, with a yellow box on the target face. The 104 clips were
+shown in a random order on a web page. For this study an \emph{interaction partner} was
+defined as any member of the wearer's group or conversation, including a friend at the
+same table who is not speaking at that moment, and a \emph{bystander} as anyone outside
+that group. Five annotators labelled every clip. Two clips turned out not to show a person
+at all (a face printed on a magazine and a product package) and were excluded, leaving
+102.
+
+In both studies the final label of each face is the majority vote, with ties counted as
+bystander, the privacy-safe choice.
+
+\subsubsection*{System decision for each data point}
+
+For Sets A and B the system's decision for a track is \emph{partner} if the track was
+confirmed as an interactor at any point in the video, which is how the latch behaves in the
+output. For Set C the decision is what a viewer of the output clip actually sees: a face
+counts as kept visible if it was unblurred in at least half of the frames in which it was
+detected during the clip. I checked these decisions against the rendered output videos by
+comparing each face region with the original and the blanket-blurred frames, and all 104
+matched.
+
+\subsubsection*{Metrics}
+\label{sec:metrics}
+
+I treat \emph{interaction partner} as the positive class, so a true positive (TP) is a
+partner kept visible, a false negative (FN) a partner blurred, a false positive (FP) a
+bystander left visible, and a true negative (TN) a bystander blurred. The two main
+metrics are
+\begin{equation}
+  \mathrm{PSR} = \frac{TN}{TN + FP}, \qquad \mathrm{IPR} = \frac{TP}{TP + FN}.
+  \label{eq:psr_ipr}
+\end{equation}
+The Privacy Success Rate (PSR) is the share of bystanders who are blurred, and the
+Interaction Preservation Rate (IPR) is the share of partners who stay visible. The names
+are mine, but the measures follow BystandAR \cite{bystandar}, which reports the percentage
+of bystanders protected and the percentage of intended subjects kept accessible. Using the
+same two measures makes my results directly comparable with that system. In standard
+classification terms, PSR is the specificity and IPR is the recall (sensitivity) of the
+partner class.
+
+I report the two separately rather than a single accuracy figure for two reasons. The two
+errors have different costs: a false positive exposes someone who did not consent, while a
+false negative only removes useful content. And accuracy would be dominated by whichever
+class is larger in a given sample. I also report precision and F$_1$, for comparison with
+general classification work. Every data point is a person rather than a frame, because the
+question an annotator answers, and the decision the latch makes, is about a person.
+
+\subsubsection*{Statistical analysis}
+\label{sec:stats}
+
+\textbf{Annotator agreement.} The ground truth is only useful if different people judge
+the same faces the same way. Raw percentage agreement overstates this, because two
+annotators who both label most faces as bystanders will agree often by chance. Cohen's
+kappa corrects for chance agreement \cite{cohen1960}:
+\begin{equation}
+  \kappa = \frac{p_o - p_e}{1 - p_e},
+  \label{eq:kappa}
+\end{equation}
+where $p_o$ is the observed agreement and $p_e$ the agreement expected if both annotators
+labelled at random with their own label frequencies. $\kappa = 1$ means perfect agreement
+and $\kappa = 0$ means no better than chance. Cohen's kappa compares two annotators, so I
+computed it for every pair. To summarise agreement across all annotators at once, I used
+Fleiss' kappa \cite{fleiss1971}, which extends the same idea to any fixed number of
+annotators. I interpret values with the scale of Landis and Koch \cite{landis1977}: 0.41
+to 0.60 is moderate, 0.61 to 0.80 substantial, and above 0.80 almost perfect agreement.
+
+\textbf{Confidence intervals.} PSR and IPR are proportions estimated from samples of a few
+dozen people, so each comes with uncertainty. I report 95\% Wilson score intervals
+\cite{wilson1927}. I chose the Wilson interval over the more common normal-approximation
+interval because the latter fails exactly where my results lie: for small samples and for
+proportions near 0\% or 100\%, it can give intervals below 0\% or above 100\%, or of zero
+width when every case is correct. The Wilson interval stays inside $[0, 1]$ and remains
+reliable for small samples.
+
+\subsubsection*{Speed and power measurement}
+
+I measured processing time on a laptop with an Intel Core i5-13420H, using only the CPU.
+Each stage of the pipeline was timed separately with a high-resolution timer over the
+first 300 frames of one interaction video, and the throughput in frames per second (FPS)
+is the number of frames divided by the total time. I ran the benchmark with the laptop on
+mains power and again on battery, since wearable devices always run on battery and laptops
+limit processor speed when unplugged.
+
+\subsubsection*{Projection to edge hardware}
+
+I did not have a Raspberry Pi~5, so I estimated its performance from published
+measurements. For the detection stage, which dominates the processing time, I used the
+Raspberry Pi~5 benchmarks published by Ultralytics for the YOLOv8n model at the same
+$640 \times 640$ input size \cite{ultralytics_rpi}. Of the export formats benchmarked
+there, I used two: PyTorch (the format my pipeline currently uses) and NCNN, the fastest
+format available on that board. For the remaining stages (frame reading, tracking,
+landmarks, classification and blurring), which are ordinary CPU work, I applied a factor
+of 3.5. This factor comes from published Geekbench~6 scores, in which the Raspberry Pi~5
+scores roughly 2.5 to 3.5 times lower than 13th-generation Intel laptop processors
+\cite{geekbench_pi5}; I used the upper end to stay conservative.

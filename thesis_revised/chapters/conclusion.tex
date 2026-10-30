@@ -1,0 +1,89 @@
+% ==============================================================================
+%  CHAPTER 6 — CONCLUSION
+% ==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+I set out to blur bystanders in first-person video while keeping the people the wearer is
+with visible, using only the glasses' camera and without recognising anyone. This chapter
+answers the three research questions from Section~\ref{sec:rq}, summarises the
+contributions, and sets out what I would do next.
+
+\subsection{Answers to the Research Questions}
+
+\paragraph{RQ1: Can simple visual cues separate partners from bystanders without
+identity recognition?}
+Yes, with a clear bias towards privacy. Face size and position alone, the Phase~2a cues,
+already separated the two groups in most cases. Adding head pose and mouth movement made
+the system more conservative: in the video-clip study it left only one of 33 bystanders
+visible, and 39 of the 40 faces it kept visible were genuine partners. The cues do not
+recognise everyone the wearer is with, however. Partners whose faces appear small, such
+as friends across a table, fall below the proximity threshold, and the system often
+confirms partners only after a delay. Neither failure requires identity information to fix.
+
+\paragraph{RQ2: How well does selective anonymization protect bystanders and preserve
+partners compared with blurring every face?}
+Blanket blurring protects every bystander but keeps no partner visible. The live system
+protected 96.97\% of bystanders while keeping 56.52\% of partners visible. For recorded
+video, the offline second pass raised partner preservation to 78.26\% while still
+protecting 93.94\% of bystanders. Selective anonymization therefore gives up a few
+percentage points of bystander protection to recover most of what blanket blurring
+destroys. These figures come from five annotators with almost perfect agreement, but from
+a dataset of 21 videos, so they should be confirmed on more varied footage.
+
+\paragraph{RQ3: How much computation does it need, and is it feasible on wearable-class
+hardware?}
+The classification itself costs almost nothing: 0.02~ms per frame. The cost lies in face
+detection and, for Phase~2b, in landmark extraction. On a laptop CPU the pipeline runs at
+9.4 to 11.6 frames per second, which is practical for recorded video but not for live
+display. On a Raspberry Pi~5 the current implementation would reach only about 1.5 frames
+per second. Projections from published benchmarks show that converting the detector to a
+faster format alone would roughly triple this, and that the neural processing units
+already present in camera-glasses chips could remove most of the detection cost. Live
+operation on glasses is therefore feasible in principle, but it needs that engineering work
+and has not been demonstrated here.
+
+\subsection{Contributions}
+
+\begin{itemize}
+  \item A pipeline that separates interaction partners from bystanders using only face
+        geometry, head pose and mouth movement from a single RGB camera, with no face
+        recognition and no stored identity.
+  \item A two-rule offline pass for recorded video (a retroactive latch and a group rule)
+        that keeps the people the wearer is with visible for their whole time on screen.
+  \item An evaluation method for this task: blind labelling of short video clips with
+        sound by several annotators, agreement measured with Cohen's and Fleiss' kappa,
+        bystander protection and partner preservation reported separately with confidence
+        intervals, and the system's decisions checked against its rendered output.
+  \item A breakdown of where the processing time goes, with projections to a
+        Raspberry Pi~5 and to current camera-glasses hardware.
+\end{itemize}
+
+\subsection{Future Work}
+
+\paragraph{Fix the distance problem.}
+Most missed partners were friends who appear small in the frame. A first step is to
+relax the area threshold when the landmark cues confirm a face that is turned towards the
+wearer and speaking. The landmark cues also need to work on small faces, which could be
+tested by enlarging the face crop before passing it to MediaPipe.
+
+\paragraph{Test the second pass on new data.}
+The retroactive latch and the group rule were designed after looking at the video-clip
+errors. I would label a fresh set of clips from different videos, with annotators who do
+not know the system, and measure both rules on it.
+
+\paragraph{Bring the group rule to live use.}
+Both second-pass rules need to see the future of the recording. Delaying the live output
+by a few seconds would give the system time to confirm partners and group members before
+their frames are shown. The useful experiment is to measure how much partner preservation
+each extra second of delay buys.
+
+\paragraph{Measure on real hardware.}
+I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and
+measure both frame rate and power draw, then test running the detector only on every
+second or third frame and measure what that costs in accuracy.
+
+\paragraph{Broaden the dataset.}
+The dataset lacks outdoor conversations and indoor crowds in which the wearer talks to no
+one. Recording such scenes with consenting participants would also allow audio to be used
+alongside the mouth cue, which would distinguish speaking from laughing or eating.
