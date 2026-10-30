@@ -20,7 +20,7 @@ behind each stage (Section~\ref{sec:theory}), the pipeline
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[node distance=7mm and 6mm]
-  \node[box, text width=28mm] (data) {\textbf{1. Dataset}\\21 first-person videos\\(public sources)};
+  \node[box, text width=28mm] (data) {\textbf{1. Dataset}\\21 first-person videos\\(EgoBlur, YouTube)};
   \node[box, text width=28mm, right=of data] (pipe) {\textbf{2. Pipeline}\\detect, track,\\classify, blur};
   \node[box, text width=28mm, right=of pipe] (run) {\textbf{3. Processing}\\all videos, every\\decision logged};
   \node[data, text width=26mm, below=9mm of data] (lab) {Human labels\\Sets A, B, C};
@@ -46,25 +46,27 @@ behind each stage (Section~\ref{sec:theory}), the pipeline
 
 \paragraph{Source and selection.}
 No public dataset labels which people in first-person video are interacting with the
-camera wearer and which are bystanders, so I assembled my own. I collected 21 videos from
-publicly available online sources, mainly YouTube; I did not record any footage myself.
-A video was included if it was filmed from a first-person viewpoint (a camera worn on the
-head or held at eye level), contained faces large enough to be detected, and clearly
-belonged to one of two categories:
+camera wearer and which are bystanders, so I assembled my own from two sources, one for
+each kind of scene. I did not record any footage myself. A video was included if it was
+filmed from a first-person viewpoint (a camera worn on the head or held at eye level),
+contained faces large enough to be detected, and clearly belonged to one of two
+categories:
 \begin{itemize}
-  \item \textbf{Interaction} (14 videos): the wearer spends time with other people, mostly
-        playing card or board games around a table, and in some videos shopping in small
-        stores and talking to staff. These videos contain both partners and bystanders,
-        for example other customers in a shop.
-  \item \textbf{Bystander} (7 videos): the wearer walks through busy outdoor places such
-        as street markets and city streets, by day and at night, without talking to
-        anyone. Every face in these videos is a bystander.
-\end{itemize}
-Interaction videos were trimmed to five-minute segments. Bystander videos were used at
-their original length of 6 to 78 seconds. Source resolutions ranged from
+    \item \textbf{Interaction} (14 videos), taken from the first-person video released with
+        Meta's EgoBlur work \cite{egoblur2023}. In these videos the wearer spends time with
+        other people, mostly playing card or board games around a table, and in some videos
+        shopping in small stores and talking to staff. They contain both partners and
+        bystanders, for example other customers in a shop. Each is a five-minute segment.
+  \item \textbf{Bystander} (7 videos), cut from first-person walking videos published on
+        YouTube. The wearer walks through busy outdoor places such as street markets and
+        city streets without talking to anyone, so every face is a bystander. I deliberately
+        took the clips from different cities and countries, by day and at night, so that
+        the bystanders cover a wide range of places, crowd sizes, lighting and appearance
+        rather than one location. Each clip was cut to the part with the most passers-by,
+        giving lengths of 6 to 78 seconds.
+\end{itemize} Source resolutions ranged from
 $1280 \times 720$ to $3840 \times 2160$, and I resized every frame to $1280 \times 720$
 before processing so that all thresholds apply to the same frame size.
-% TODO(Akash): if you remember the search terms or channels used, add one sentence here.
 
 \paragraph{Size of the dataset.}
 Counting only videos would understate how much data the system processes, because each
