@@ -35,8 +35,10 @@ motion-only SORT tracker, and described by four cues: how much of the frame a fa
 covers, how close it is to the centre of view, which way the head is turned, and
 whether the mouth is moving. A rule-based classifier with temporal confirmation and
 latching turns these cues into a partner or bystander decision for each face. For
-recorded video, an offline second pass keeps a confirmed partner visible for their whole
-time on screen and also keeps people who stay with the wearer's group.
+recorded video, an offline second pass decides once per person for the whole video: it
+keeps a confirmed partner visible for their whole time on screen, keeps people who stay with
+the wearer's group, and rejoins a person who briefly leaves the view, all without
+recognising anyone.
 
 I evaluated the system on 21 first-person videos, with interaction scenes from the
 EgoBlur release and bystander scenes from YouTube (131,187 frames, 2,736 face tracks),
@@ -44,8 +46,8 @@ against 197 labelled people from three human labelling studies. In the
 largest, five annotators labelled 102 short video clips with almost perfect agreement
 (Fleiss' $\kappa = 0.887$). The live system blurred 96.97\% of bystanders and kept
 56.52\% of partners visible; when it kept a face visible, it was right 97.5\% of the
-time. The offline second pass raised partner preservation to 78.26\% while still
-blurring 93.94\% of bystanders. An ablation showed that face size drives most
+time. The offline second pass raised partner preservation to 85.51\% while still
+blurring 90.91\% of bystanders. An ablation showed that face size drives most
 decisions, and letting the head-pose cue lower the size threshold for faces turned towards
 the wearer raised live partner preservation to 78.26\%, with 90.91\% of bystanders still
 blurred, when tested on videos it was not tuned on. The classifier

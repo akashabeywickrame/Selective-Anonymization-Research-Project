@@ -498,9 +498,9 @@ any difference between the two outputs comes from the classification stage alone
 \label{sec:secondpass}
 
 The latch only works forward in time, so a partner is blurred until the system has seen
-enough evidence. When the whole recording is available, two further rules can be applied
-after the first pass, using only the decisions already in the log
-(Figure~\ref{fig:secondpass}):
+enough evidence. When the whole recording is available, the decision can instead be made
+once per person for the whole video. Three rules are applied after the first pass, using
+only the decisions and boxes already in the log (Figure~\ref{fig:secondpass}):
 \begin{enumerate}
   \item \textbf{Retroactive latch.} A track confirmed as a partner at any point is kept
         visible for its whole time on screen, including the frames before confirmation.
@@ -509,20 +509,29 @@ after the first pass, using only the decisions already in the log
         treated as part of the wearer's group and kept visible. Friends sitting at the same
         table stay in view for minutes, while passers-by rarely stay for 10~seconds.
         Requiring a confirmed partner to be present stops the rule from preserving
-        strangers who simply stay in one place, such as a shop assistant.
+                strangers who simply stay in one place, such as a shop assistant.
+  \item \textbf{Track joining.} The tracker forgets a face that has been hidden for more
+        than 3~seconds, so the same person can return under a new track number and has to
+        be confirmed again. Without any face recognition, a new track is joined to one that
+        ended at most 5~seconds earlier if it starts close to where that track was last
+        seen (centre distance below one face width) at a similar size (width within a
+        factor of two). The first two rules are then applied to each joined chain rather
+        than to each piece.
 \end{enumerate}
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[node distance=6mm and 8mm]
-  \node[term] (log) {Decision log of a recorded video};
-  \node[decision, below=of log] (ever) {Track confirmed\\at any time?};
+    \node[term] (log) {Decision log of a recorded video};
+  \node[box, below=of log, text width=58mm] (join) {Join track pieces of the same person\\(close in time, position and size)};
+  \node[decision, below=of join] (ever) {Person confirmed\\at any time?};
   \node[box, fill=black!12, right=12mm of ever, text width=30mm] (keep1) {Keep visible\\for whole track};
   \node[decision, below=of ever] (long) {Visible $\ge 10$~s?};
   \node[decision, below=of long] (co) {With a confirmed partner\\for $\ge 50\%$ of its frames?};
   \node[box, fill=black!12, right=12mm of co, text width=30mm] (keep2) {Keep visible\\(group member)};
   \node[box, below=of co, text width=30mm] (blur) {Blur as before};
-  \draw[arr] (log) -- (ever);
+    \draw[arr] (log) -- (join);
+  \draw[arr] (join) -- (ever);
   \draw[arr] (ever) -- node[lbl, above] {yes} (keep1);
   \draw[arr] (ever) -- node[lbl, right] {no} (long);
   \draw[arr] (long) -- node[lbl, right] {yes} (co);
@@ -530,7 +539,7 @@ after the first pass, using only the decisions already in the log
   \draw[arr] (co) -- node[lbl, above] {yes} (keep2);
   \draw[arr] (co) -- node[lbl, right] {no} (blur);
 \end{tikzpicture}
-\caption{The offline second pass, applied to each track of a recorded video.}
+\caption{The offline second pass, applied to each person in a recorded video.}
 \label{fig:secondpass}
 \end{figure}
 

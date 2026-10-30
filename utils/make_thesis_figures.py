@@ -103,9 +103,9 @@ def fig_tradeoff():
         t = round(float(r["config"]) * 100, 1)
         ax.annotate(f"{t:.1f}%", (xi, yi), textcoords="offset points", xytext=offs[t],
                     ha="center", fontsize=7.5, color=INK2)
-    ax.scatter([78.26], [93.94], s=70, marker="D", color=ORANGE, edgecolor="white", lw=1,
-               zorder=4, label="Offline second pass (threshold 1.2%)")
-    ax.annotate("second pass", (78.26, 93.94), textcoords="offset points", xytext=(8, 4),
+    ax.scatter([85.51], [90.91], s=70, marker="D", color=ORANGE, edgecolor="white", lw=1,
+               zorder=4, label="Offline second pass (whole video, track joining)")
+    ax.annotate("second pass", (85.51, 90.91), textcoords="offset points", xytext=(8, 4),
                 fontsize=8, color=INK)
     ax.scatter([0], [100], s=70, marker="s", color=INK2, zorder=4, label="Blanket blurring")
     ax.annotate("blanket blurring", (0, 100), textcoords="offset points", xytext=(8, -4),

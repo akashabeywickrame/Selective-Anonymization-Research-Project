@@ -163,6 +163,10 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 - Not changed in config/main.py: these are evaluated by replay only.
 - **OpenVINO accuracy:** `python eval/rerun_openvino.py` (all 21 videos, fresh log logs/tracking_log_openvino.csv, ~1.5 h) then `python eval/score_openvino.py` (matches clip tracks by IoU). Placeholder `%% OPENVINO_RESULT` in results_discussion.tex §sec:res_improve awaits the numbers.
 
+## Whole-video decision (2026-10-30), `python eval/whole_video.py` → logs/whole_video.csv
+
+- Offline, one decision per person: retro latch 49/20/2/31 (93.94/71.01); +group 54/15/2/31 (93.94/78.26); **+track joining (no face recognition: new track starts ≤5 s after another ended, centre distance < one face width, width ratio 0.5-2) 59/10/3/30 → PSR 90.91, IPR 85.51, F1 90.08** = the thesis's offline second pass now. Joining gap 1-20 s: IPR 84.06-86.96, PSR 87.88-93.94. Adding the CV adaptive threshold on top gave no gain (59/10/4/29).
+
 ## Rules for working on this project
 
 - **University thesis template (uopThesis class, given by the university, 2026-10-26):** book-style (`\chapter`), one file per chapter in `chapters/` added to main.tex with `\include{chapters/X.tex}`, natbib author-year citations (`\citep`), BibTeX `References.bib` with `apalike`, images in `images/`. `chapters_4_5_6.tex` stays the working copy; after every edit run `python -m utils.export_thesis_chapters`, which writes `thesis/chapters/{Results,Discussion,Conclusion}.tex` (section levels shifted, `Section~4.x` → `
