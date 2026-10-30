@@ -97,6 +97,37 @@ Face tracks visible for 2~s or more & 487        & 92       & 579 \\
 \end{singlespace}
 \end{table}
 
+\paragraph{Labelled data points.}
+The unit of evaluation is a person, not a video: each data point is one face track that
+human annotators judged to be a partner or a bystander, together with the system's
+decision for it. A single video can contribute many data points, because it contains
+several partners and bystanders. Table~\ref{tab:datapoints} shows the labelled data across
+the three evaluation sets (Section~\ref{sec:groundtruth}): 197 labelled people, drawn from
+all 21 videos and judged through 691 individual human labels. The video-clip set alone
+covers every one of the 21 videos with 102 people.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Labelled data points used for evaluation. A data point is one person (face track)
+with a human label and a system decision.}
+\label{tab:datapoints}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Evaluation set} & \textbf{Data points} & \textbf{Partners} & \textbf{Bystanders} &
+\textbf{Individual labels} \
+\midrule
+A: Phase 2a tracks (1 annotator)   & 66  & 26 & 40 & 66 \
+B: Still frames (4 annotators)     & 29  & 7  & 22 & 114 \
+C: Video clips (5 annotators)      & 102 & 69 & 33 & 511 \
+\midrule
+\textbf{Total}                     & \textbf{197} & \textbf{102} & \textbf{95} & \textbf{691} \
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
 \paragraph{Balance.}
 By duration the dataset is dominated by interaction video (70 of 73 minutes). The
 imbalance between partners and bystanders is smaller than this suggests, because the
