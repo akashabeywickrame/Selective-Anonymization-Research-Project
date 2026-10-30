@@ -19,21 +19,25 @@ behind each stage (Section~\ref{sec:theory}), the pipeline
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[node distance=7mm and 6mm]
-  \node[box, text width=28mm] (data) {\textbf{1. Dataset}\\21 first-person videos\\(Ego4D, YouTube)};
-  \node[box, text width=28mm, right=of data] (pipe) {\textbf{2. Pipeline}\\detect, track,\\classify, blur};
-  \node[box, text width=28mm, right=of pipe] (run) {\textbf{3. Processing}\\all videos, every\\decision logged};
-  \node[data, text width=26mm, below=9mm of data] (lab) {Human labels\\Sets A, B, C};
-  \node[box, text width=40mm, below=9mm of run] (eval) {\textbf{4. Evaluation}\\accuracy, agreement,\\ablation, speed};
-  \node[data, text width=26mm, below=9mm of pipe] (base) {Blanket-blur\\baseline};
+\begin{tikzpicture}[node distance=6mm and 8mm]
+  % main sequence of the research
+  \node[box, text width=56mm] (data) {\textbf{1. Collect the dataset}\\14 interaction videos (Ego4D)\\7 bystander videos (YouTube)};
+  \node[box, text width=56mm, below=of data] (pipe) {\textbf{2. Build the pipeline}\\detect $\rightarrow$ track $\rightarrow$ extract cues\\$\rightarrow$ classify $\rightarrow$ blur bystanders};
+  \node[box, text width=56mm, below=of pipe] (run) {\textbf{3. Run it on every video}\\anonymized video, plus a log of\\every decision for every face};
+  \node[box, text width=56mm, below=10mm of run] (eval) {\textbf{4. Evaluate}\\compare the system's decisions\\with the human labels};
+  \node[term, text width=56mm, below=of eval] (res) {Privacy (PSR) and utility (IPR), annotator\\agreement, cue ablation, speed and power};
+  % inputs to the evaluation
+  \node[data, text width=32mm, right=of pipe] (lab) {\textbf{Human labels}\\people sampled from\\the videos, labelled\\by hand (Sets A, B, C)};
+  \node[data, text width=32mm, left=of run] (base) {\textbf{Baseline}\\blur every face};
   \draw[arr] (data) -- (pipe);
   \draw[arr] (pipe) -- (run);
   \draw[arr] (run) -- (eval);
-  \draw[arr] (data) -- (lab);
-  \draw[arr] (lab) -- (base);
-  \draw[arr] (base) -- (eval);
+  \draw[arr] (eval) -- (res);
+  \draw[arr] (data.east) -| (lab.north);
+  \draw[arr] (lab.south) |- (eval.east);
+  \draw[arr] (base.south) |- (eval.west);
 \end{tikzpicture}
-\caption{Overall research design.}
+\caption{Overall research design. The main sequence runs down the middle; the human labels and the baseline feed into the evaluation.}
 \label{fig:research_design}
 \end{figure}
 
@@ -260,24 +264,31 @@ led to it, which is what makes the later analyses possible.
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[node distance=5mm]
+\begin{tikzpicture}[node distance=7mm and 12mm]
+  % processing chain, one frame at a time
   \node[term] (in) {Video frame};
-  \node[box, text width=62mm, below=of in] (det) {\textbf{1. Face detection} (YOLOv8n-face)\\boxes and confidence scores};
-  \node[box, text width=62mm, below=of det] (trk) {\textbf{2. Tracking} (SORT)\\a temporary number for each face};
-  \node[box, text width=62mm, below=of trk] (cue) {\textbf{3. Cue extraction}\\size, centrality, head yaw, mouth opening};
-  \node[box, text width=62mm, below=of cue] (cls) {\textbf{4. Classification}\\partner or bystander, with latching};
-  \node[box, text width=62mm, below=of cls] (anon) {\textbf{5. Selective anonymization}\\blur bystanders only};
-  \node[term, below=of anon] (out) {Output frame};
-  \node[data, text width=30mm, right=12mm of cls] (log) {Decision log\\(cues and label for\\every face, every frame)};
-  \node[data, text width=30mm, right=12mm of anon] (base) {Blanket-blurred\\frame (baseline)};
-  \node[data, text width=30mm, left=12mm of cue] (lm) {MediaPipe\\landmarks on\\each face crop};
-  \draw[arr] (in) -- (det); \draw[arr] (det) -- (trk); \draw[arr] (trk) -- (cue);
-  \draw[arr] (cue) -- (cls); \draw[arr] (cls) -- (anon); \draw[arr] (anon) -- (out);
+  \node[box, text width=62mm, below=of in] (det) {\textbf{1. Face detection} (YOLOv8n-face)\\finds every face in the frame};
+  \node[box, text width=62mm, below=of det] (trk) {\textbf{2. Tracking} (SORT)\\links each face to the same face\\in earlier frames};
+  \node[box, text width=62mm, below=of trk] (cue) {\textbf{3. Cue extraction}\\size and centrality (Phase~2a)\\head yaw and mouth movement (Phase~2b)};
+  \node[box, text width=62mm, below=of cue] (cls) {\textbf{4. Classification}\\partner or bystander;\\a confirmed partner stays a partner};
+  \node[box, text width=62mm, below=of cls] (anon) {\textbf{5. Selective anonymization}\\blur bystander faces only};
+  \node[term, below=of anon] (out) {Anonymized frame};
+  % what passes between the stages
+  \draw[arr] (in) -- (det);
+  \draw[arr] (det) -- node[lbl, left] {face boxes} (trk);
+  \draw[arr] (trk) -- node[lbl, left] {numbered faces} (cue);
+  \draw[arr] (cue) -- node[lbl, left] {cue values} (cls);
+  \draw[arr] (cls) -- node[lbl, left] {label per face} (anon);
+  \draw[arr] (anon) -- (out);
+  % side inputs and outputs
+  \node[data, text width=32mm, right=of cue] (lm) {\textbf{MediaPipe}\\478 landmarks on\\each face crop};
+  \node[data, text width=32mm, right=of cls] (log) {\textbf{Decision log}\\cues and label for every\\face in every frame};
+  \node[data, text width=32mm, right=of anon] (base) {\textbf{Baseline}\\the same faces,\\all blurred};
+  \draw[arr] (lm) -- (cue);
   \draw[arr] (cls) -- (log);
   \draw[arr] (anon) -- (base);
-  \draw[arr] (lm) -- (cue);
 \end{tikzpicture}
-\caption{The five stages of the pipeline and the data each produces.}
+\caption{The five stages of the pipeline. Labels on the arrows give what passes from one stage to the next; the boxes on the right are the extra input and the two by-products used in the evaluation.}
 \label{fig:pipeline}
 \end{figure}
 
