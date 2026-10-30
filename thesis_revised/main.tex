@@ -11,11 +11,15 @@
 \usepackage{setspace}
 \usepackage{parskip}
 
-% ── Math, tables, graphics ────────────────────────────────────────────────────
+% ── Math, tables, graphics, diagrams ──────────────────────────────────────────
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc}
+\usepackage{float}
 
 % ── Citations: IEEE style, numbered in order of first use ──────────────────────
 \usepackage{cite}
@@ -25,12 +29,16 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=black, citecolor=black}
 
-% ── Section numbering format: 1.0 / 1.1. / 1.2. ──────────────────────────────
+% ── Section numbering format: 1.0 / 1.1. / 1.1.1 ──────────────────────────────
 \usepackage{tocloft}
 \setlength{\cftsecnumwidth}{4em}
 \setlength{\cftsubsecnumwidth}{5em}
+\setlength{\cftsubsubsecnumwidth}{5.5em}
 \renewcommand{\thesection}{\arabic{section}.0}
 \renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}.}
+\renewcommand{\thesubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
@@ -45,6 +53,20 @@
 \newcommand{\fitwidth}[1]{\sbox{\fitbox}{#1}%
   \ifdim\wd\fitbox>\linewidth\resizebox{\linewidth}{!}{\usebox{\fitbox}}%
   \else\usebox{\fitbox}\fi}
+
+% ── Shared styles for flow diagrams ───────────────────────────────────────────
+\tikzset{
+  box/.style={rectangle, rounded corners=2pt, draw=black!70, fill=black!4,
+              align=center, minimum height=9mm, inner sep=4pt, font=\small},
+  data/.style={rectangle, draw=black!70, fill=white, align=center,
+               minimum height=8mm, inner sep=4pt, font=\small},
+  decision/.style={diamond, aspect=2.2, draw=black!70, fill=white, align=center,
+                   inner sep=1pt, font=\small},
+  term/.style={rectangle, rounded corners=8pt, draw=black!70, fill=black!12,
+               align=center, minimum height=8mm, inner sep=4pt, font=\small},
+  arr/.style={-{Latex[length=2.2mm]}, thick, draw=black!75},
+  lbl/.style={font=\footnotesize, inner sep=2pt}
+}
 
 \begin{document}
 
@@ -74,18 +96,30 @@
   {\large 8th of June, 2026\par}
 \end{titlepage}
 
+% ── Front matter (roman page numbers) ─────────────────────────────────────────
+\pagenumbering{roman}
 \onehalfspacing
+\input{chapters/front_matter}
 
-\chapterstart
+\clearpage
+\begin{singlespace}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\end{singlespace}
+
+% ── Main text (arabic page numbers, chapters start on odd pages) ──────────────
+\clearpage
+\pagenumbering{arabic}
 \input{chapters/introduction}
 \chapterstart
 \input{chapters/literature_review}
 \chapterstart
 \input{chapters/methodology}
 \chapterstart
-\input{chapters/results}
-\chapterstart
-\input{chapters/discussion}
+\input{chapters/results_discussion}
 \chapterstart
 \input{chapters/conclusion}
 

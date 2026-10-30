@@ -1,0 +1,64 @@
+% ==============================================================================
+%  FRONT MATTER: declaration, abstract, acknowledgements
+% ==============================================================================
+
+\section*{Declaration}
+\addcontentsline{toc}{section}{Declaration}
+
+I declare that this report is my own work and that, except where reference is made to
+the work of others, it has not been submitted in whole or in part for any other degree
+or qualification at this or any other university.
+
+\vspace{1.5cm}
+\begin{tabular}{@{}l@{\hspace{3cm}}l@{}}
+\rule{5cm}{0.4pt} & \rule{4cm}{0.4pt} \\
+Akash Abeywickrame (S/20/302) & Date \\[1.5cm]
+\rule{5cm}{0.4pt} & \rule{4cm}{0.4pt} \\
+Dr. Hakim Usoof (Supervisor) & Date \\
+\end{tabular}
+
+\clearpage
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+Camera glasses record everyone in front of the wearer, including strangers who never
+agreed to be filmed. The two protections in use today both fall short: a small
+recording light that bystanders rarely notice, and blurring every face, which also
+erases the friends and companions the wearer is actually with. The one existing system
+that blurs selectively depends on eye tracking and a microphone array that ordinary
+camera glasses do not have.
+
+In this project I designed and evaluated a pipeline that blurs bystanders but leaves the
+wearer's interaction partners visible, using only the glasses' RGB camera and without
+recognising anyone. Faces are detected with YOLOv8n-face, followed over time with a
+motion-only SORT tracker, and described by four cues: how much of the frame a face
+covers, how close it is to the centre of view, which way the head is turned, and
+whether the mouth is moving. A rule-based classifier with temporal confirmation and
+latching turns these cues into a partner or bystander decision for each face. For
+recorded video, an offline second pass keeps a confirmed partner visible for their whole
+time on screen and also keeps people who stay with the wearer's group.
+
+I evaluated the system on 21 first-person videos (131,187 frames, 2,736 face tracks)
+collected from public sources, against labels from three blind human studies. In the
+largest, five annotators labelled 102 short video clips with almost perfect agreement
+(Fleiss' $\kappa = 0.887$). The live system blurred 96.97\% of bystanders and kept
+56.52\% of partners visible; when it kept a face visible, it was right 97.5\% of the
+time. The offline second pass raised partner preservation to 78.26\% while still
+blurring 93.94\% of bystanders. An ablation on the same clips showed that face size
+drives most decisions and that lowering the size threshold from 1.2\% to 1.0\% of the
+frame would have kept 72.46\% of partners visible at no cost to bystanders. On a laptop
+CPU the pipeline runs at 9 to 12 frames per second, which is practical for recorded
+video; the classifier itself takes 0.02~ms per frame, and live use on glasses depends on
+running the face detector on the neural processing units these devices already contain.
+
+\textbf{Keywords:} bystander privacy, augmented reality, egocentric vision, selective
+anonymization, face detection, edge computing.
+
+\clearpage
+\section*{Acknowledgements}
+\addcontentsline{toc}{section}{Acknowledgements}
+
+I am grateful to my supervisor, Dr. Hakim Usoof, for his guidance and for detailed
+feedback that shaped this report. I thank the Department of Statistics and Computer
+Science, University of Peradeniya, and the friends who gave their time to label the
+evaluation clips. % TODO(Akash): add anyone else you wish to thank.

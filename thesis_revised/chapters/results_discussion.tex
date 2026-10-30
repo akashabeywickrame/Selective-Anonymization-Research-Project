@@ -1,0 +1,708 @@
+% ==============================================================================
+%  CHAPTER 4 — RESULTS AND DISCUSSION
+% ==============================================================================
+\section{Results and Discussion}
+\label{sec:results}
+
+The first part of this chapter reports the results (Sections~\ref{sec:res_overview}
+to~\ref{sec:res_speed}); every figure is stated there once. The second part
+(Section~\ref{sec:discussion}) interprets them, compares the system with prior work and
+with real camera-glasses hardware, and sets out the limitations of the study.
+
+\subsection{Overview of the Experiments}
+\label{sec:res_overview}
+
+Table~\ref{tab:experiments} lists the experiments, the data each uses, and the research
+question each serves.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Experiments reported in this chapter.}
+\label{tab:experiments}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Section} & \textbf{Experiment} & \textbf{Data} & \textbf{Question} \\
+\midrule
+\ref{sec:res_agreement}  & Reliability of the human labels        & Sets B, C          & all \\
+\ref{sec:res_2a}         & Geometry cues only (Phase~2a)          & Set A              & RQ2 \\
+\ref{sec:res_2b}         & Full system on still frames            & Set B              & RQ2 \\
+\ref{sec:res_clips}      & Full system on video clips             & Set C              & RQ2 \\
+\ref{sec:res_ablation}   & Contribution of each cue               & Set C (replay)     & RQ1 \\
+\ref{sec:res_sweep}      & Sensitivity to the area threshold      & Set C (replay)     & RQ1, RQ2 \\
+\ref{sec:res_errors}     & Analysis of errors                     & Sets A, B, C, log  & RQ1 \\
+\ref{sec:res_secondpass} & Offline second pass                    & Set C              & RQ2 \\
+\ref{sec:res_baseline}   & Comparison with blanket blurring       & all sets           & RQ2 \\
+\ref{sec:res_speed}      & Processing time and projections        & benchmarks         & RQ3 \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Reliability of the Human Labels}
+\label{sec:res_agreement}
+
+Figure~\ref{fig:agreement} shows the agreement between every pair of annotators in the two
+blind studies. On still frames (Set~B), pairwise Cohen's~$\kappa$ ranged from 0.307 to
+0.724, with a mean of 0.587: moderate agreement. Four annotators gave 114 of the 116
+possible labels, and one face ended in a tie. On video clips (Set~C), pairwise $\kappa$
+ranged from 0.818 to 0.957 (Table~\ref{tab:clip_kappa}), every pair reaching almost
+perfect agreement, and Fleiss'~$\kappa$ across all five annotators was 0.887. No clip
+ended in a tie. Because I was one of the annotators, I also recomputed the majority vote
+without my labels: it did not change the label of any of the 102 clips.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_agreement.pdf}
+\caption{Pairwise annotator agreement in the two blind studies, against the scale of
+Landis and Koch \cite{landis1977}. Each dot is one pair of annotators.}
+\label{fig:agreement}
+\end{figure}
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Annotator agreement on Set~C. Annotator A is myself.}
+\label{tab:clip_kappa}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Annotator pair} & \textbf{Cohen's $\kappa$} & \textbf{Raw agreement} \\
+\midrule
+A and B & 0.957 & 98.0\% \\
+A and C & 0.913 & 96.1\% \\
+A and D & 0.818 & 92.1\% \\
+A and E & 0.822 & 92.2\% \\
+B and C & 0.956 & 98.0\% \\
+B and D & 0.861 & 94.1\% \\
+B and E & 0.864 & 94.1\% \\
+C and D & 0.905 & 96.0\% \\
+C and E & 0.907 & 96.1\% \\
+D and E & 0.852 & 94.1\% \\
+\midrule
+\textbf{All five (Fleiss' $\kappa$)} & \textbf{0.887} & \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Phase 2a: Geometry Cues Only}
+\label{sec:res_2a}
+
+With only the proximity and centrality cues, the system was evaluated on the 66 tracks of
+Set~A (Table~\ref{tab:confusion_2a}). It blurred 35 of 40 bystanders and kept 22 of 26
+partners visible: PSR = 87.50\% (95\% CI 73.9-94.5\%), IPR = 84.62\% (66.5-93.9\%),
+precision 81.48\% and F$_1$ 83.02\%.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Phase~2a confusion matrix on Set~A. Rows give the human label and columns the
+system's decision.}
+\label{tab:confusion_2a}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Kept visible} & \textbf{Blurred} & \textbf{Total} \\
+\midrule
+\textbf{Partner}   & 22 (TP) & 4 (FN)  & 26 \\
+\textbf{Bystander} & 5 (FP)  & 35 (TN) & 40 \\
+\textbf{Total}     & 27      & 39      & 66 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Phase 2b: Still-Frame Evaluation}
+\label{sec:res_2b}
+
+With the head-pose and speaking cues added, the system was first evaluated on the 29 faces
+of Set~B, of which the majority vote labelled 7 partners and 22 bystanders
+(Table~\ref{tab:confusion_2b}). All 22 bystanders were blurred, including the 8 who
+appeared in interaction videos next to a partner, giving PSR = 100\% (85.1-100\%). Four of
+the 7 partners were kept visible, giving IPR = 57.14\% (25.0-84.2\%), precision 100\% and
+F$_1$ 72.73\%. With only seven partners, each one changes IPR by 14 percentage points,
+which is why its interval is so wide.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Phase~2b confusion matrix on Set~B (still frames).}
+\label{tab:confusion_2b}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Kept visible} & \textbf{Blurred} & \textbf{Total} \\
+\midrule
+\textbf{Partner}   & 4 (TP) & 3 (FN)  & 7 \\
+\textbf{Bystander} & 0 (FP) & 22 (TN) & 22 \\
+\textbf{Total}     & 4      & 25      & 29 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Phase 2b: Video-Clip Evaluation}
+\label{sec:res_clips}
+
+Tables~\ref{tab:confusion_clips} and~\ref{tab:metrics_clips} give the results on the 102
+clips of Set~C. The system blurred 32 of 33 bystanders, including all 12 who appeared in
+interaction videos alongside the wearer's group, and kept 39 of 69 partners visible. Of
+the 40 faces it kept visible, 39 were partners.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Phase~2b confusion matrix on Set~C (video clips).}
+\label{tab:confusion_clips}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Kept visible} & \textbf{Blurred} & \textbf{Total} \\
+\midrule
+\textbf{Partner}   & 39 (TP) & 30 (FN) & 69 \\
+\textbf{Bystander} & 1 (FP)  & 32 (TN) & 33 \\
+\textbf{Total}     & 40      & 62      & 102 \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Phase~2b metrics on Set~C with 95\% Wilson intervals. IPR, precision and F$_1$
+are not defined for bystander videos, which contain no partners.}
+\label{tab:metrics_clips}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{All clips} & \textbf{Interaction videos} & \textbf{Bystander videos} \\
+\midrule
+Faces evaluated & 102 & 81 & 21 \\
+PSR       & 96.97\% (84.7-99.5) & 100.00\% (75.7-100.0) & 95.24\% (77.3-99.2) \\
+IPR       & 56.52\% (44.8-67.6) & 56.52\% (44.8-67.6) & \\
+Precision & 97.50\% & 100.00\% & \\
+F$_1$     & 71.56\% & 72.22\% & \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Contribution of Each Cue}
+\label{sec:res_ablation}
+
+The replay of the classifier on the logged cues (Section~\ref{sec:replay}) reproduced the
+logged decisions exactly for 20 of the 21 videos. In the remaining video, the log contains
+two copies of part of the video from an interrupted and repeated run, which the replay
+cannot tell apart; even so, all 104 clip decisions in Set~C were reproduced. Table~\ref{tab:ablation}
+compares four variants of the classifier on the same 102 labelled clips.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Ablation of the cues on Set~C. All variants see the same detections and tracks.}
+\label{tab:ablation}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Cues used} & \textbf{TP / FN / FP / TN} & \textbf{PSR} & \textbf{IPR} &
+\textbf{Precision} & \textbf{F$_1$} \\
+\midrule
+Geometry only (Phase~2a)       & 38 / 31 / 1 / 32 & 96.97\% & 55.07\% & 97.44\% & 70.37\% \\
+Geometry + head-pose veto      & 38 / 31 / 1 / 32 & 96.97\% & 55.07\% & 97.44\% & 70.37\% \\
+Geometry + speaking boost      & 39 / 30 / 1 / 32 & 96.97\% & 56.52\% & 97.50\% & 71.56\% \\
+All cues (Phase~2b)            & 39 / 30 / 1 / 32 & 96.97\% & 56.52\% & 97.50\% & 71.56\% \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+On the same clips, the geometry cues alone produced almost exactly the result of the full
+system. The head-pose veto changed no clip decision, and the speaking boost changed one,
+keeping one more partner visible. Across the whole dataset, MediaPipe found landmarks in
+52.9\% of the 174,161 face detections. In 7.0\% of those the head was turned by more than
+$40^\circ$, and the veto overruled a positive geometry decision in 1,159 detections, 0.67\%
+of the total, none of which changed the outcome of a sampled clip.
+
+% ------------------------------------------------------------------------------
+\subsection{Sensitivity to the Area Threshold}
+\label{sec:res_sweep}
+
+Because the geometry cues decide most outcomes, I replayed the full system with the area
+threshold set from 0.4\% to 2.0\% of the frame (Table~\ref{tab:sweep},
+Figure~\ref{fig:tradeoff}).
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Effect of the area threshold $\tau_{\mathrm{area}}$ on Set~C (full system). The
+row in bold is the threshold used throughout this thesis.}
+\label{tab:sweep}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$\boldsymbol{\tau_{\mathrm{area}}}$ & \textbf{TP / FN / FP / TN} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+0.4\% & 60 / 9 / 7 / 26  & 78.79\%  & 86.96\% & 88.24\% \\
+0.6\% & 58 / 11 / 5 / 28 & 84.85\%  & 84.06\% & 87.88\% \\
+0.8\% & 55 / 14 / 4 / 29 & 87.88\%  & 79.71\% & 85.94\% \\
+1.0\% & 50 / 19 / 1 / 32 & 96.97\%  & 72.46\% & 83.33\% \\
+\textbf{1.2\%} & \textbf{39 / 30 / 1 / 32} & \textbf{96.97\%} & \textbf{56.52\%} & \textbf{71.56\%} \\
+1.5\% & 36 / 33 / 1 / 32 & 96.97\%  & 52.17\% & 67.92\% \\
+2.0\% & 29 / 40 / 0 / 33 & 100.00\% & 42.03\% & 59.18\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/fig_tradeoff.pdf}
+\caption{Bystander protection (PSR) against partner preservation (IPR) on Set~C as the
+area threshold varies, with the offline second pass and blanket blurring for comparison.
+Points further up and to the right are better.}
+\label{fig:tradeoff}
+\end{figure}
+
+Between 1.0\% and 1.5\% PSR does not change: the one bystander left visible is the same in
+every case. Over that range IPR rises from 52.17\% to 72.46\%. Below 1.0\% each further
+step keeps more partners but also exposes more bystanders, and at 0.4\% seven of the 33
+bystanders are left visible.
+
+% ------------------------------------------------------------------------------
+\subsection{Analysis of Errors}
+\label{sec:res_errors}
+
+\paragraph{Face size.}
+Figure~\ref{fig:facesize} shows how much of the frame each face covered during its clip.
+The partners the system kept had a median face size of 1.72\% of the frame, the partners
+it blurred 0.91\%, and the bystanders 0.37\%. Of the 30 partners blurred, 25 were below the
+1.2\% threshold for most of their clip. The landmark cues were available for these faces:
+MediaPipe found landmarks in 69\% of the frames of the partners the system blurred,
+against 57\% for those it kept.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_face_size.pdf}
+\caption{Median face size during each Set~C clip, by outcome. Each dot is one clip; the
+black bar marks the median of each group.}
+\label{fig:facesize}
+\end{figure}
+
+\paragraph{Time to confirmation.}
+For the partners the system kept, confirmation was almost immediate: the median time from
+a face first appearing to being confirmed was 0.03~s, and 92\% were confirmed within two
+seconds. Ten of the 30 partners the system blurred were confirmed later in the same video,
+outside their clip, with a median of 10.9~s after they first appeared.
+
+\paragraph{Still frames.}
+All three partners missed in Set~B had faces covering 0.36\% to 0.72\% of the frame. Two of
+them were the same person, covered by two overlapping detections that the tracker followed
+as separate tracks, so one miss was counted twice. The third stood at a shop counter near
+the edge of the frame.
+
+\paragraph{Phase 2a.}
+All five bystanders that Phase~2a left visible came from interaction videos: people who
+stood close to the wearer and near the centre of the view for a long time without ever
+being addressed. The four partners it missed had short interactions after spending a long
+time at the edge of the frame, so the two-frame confirmation was not reached before the
+interaction ended.
+
+\paragraph{Privacy leaks and detector errors.}
+The one bystander the live system left visible in Set~C was unblurred in exactly half of
+the frames of its clip, the boundary of the per-clip decision rule. Two of the 104 sampled
+tracks were not people. One was a face printed on a magazine cover, which the system
+blurred. The other was a product package on a shop shelf, which the system confirmed as a
+partner and left unblurred; its median detection confidence was 0.53, just above the 0.45
+threshold, and MediaPipe found a face in only 1 of its 73 frames.
+
+% ------------------------------------------------------------------------------
+\subsection{Offline Second Pass}
+\label{sec:res_secondpass}
+
+Table~\ref{tab:secondpass} shows the effect of the two rules of
+Section~\ref{sec:secondpass} on Set~C. The retroactive latch recovered 10 partners and
+exposed one more bystander. The group rule recovered 5 further partners with no further
+exposure. With the group rule's time limit set anywhere from 10 to 60~seconds, PSR stayed
+at 93.94\% and IPR ranged from 72.46\% to 78.26\%; only a limit as short as 5~seconds
+exposed another bystander.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Effect of the offline second pass on Set~C (102 clips, 95\% Wilson intervals).}
+\label{tab:secondpass}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Live system} & \textbf{+ Retroactive latch} & \textbf{+ Group rule} \\
+\midrule
+TP / FN / FP / TN & 39 / 30 / 1 / 32 & 49 / 20 / 2 / 31 & 54 / 15 / 2 / 31 \\
+PSR       & 96.97\% (84.7-99.5) & 93.94\% (80.4-98.3) & 93.94\% (80.4-98.3) \\
+IPR       & 56.52\% (44.8-67.6) & 71.01\% (59.4-80.4) & 78.26\% (67.2-86.4) \\
+Precision & 97.50\% & 96.08\% & 96.43\% \\
+F$_1$     & 71.56\% & 81.67\% & 86.40\% \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Comparison with Blanket Blurring}
+\label{sec:res_baseline}
+
+The blanket-blurring baseline blurs every face, so by construction its PSR is 100\% and its
+IPR is 0\%. Table~\ref{tab:vs_baseline} places each configuration beside it.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{All configurations against the blanket-blurring baseline.}
+\label{tab:vs_baseline}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{Set} & \textbf{PSR} & \textbf{IPR} & \textbf{F$_1$} \\
+\midrule
+Blanket blurring (baseline)       & any & 100\%    & 0\%     & 0\% \\
+Phase~2a, geometry cues           & A   & 87.50\%  & 84.62\% & 83.02\% \\
+Phase~2b, all cues                & B   & 100.00\% & 57.14\% & 72.73\% \\
+Phase~2b, all cues                & C   & 96.97\%  & 56.52\% & 71.56\% \\
+Phase~2b with offline second pass & C   & 93.94\%  & 78.26\% & 86.40\% \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+% ------------------------------------------------------------------------------
+\subsection{Processing Time and Projections}
+\label{sec:res_speed}
+
+\paragraph{Time per stage.}
+Figure~\ref{fig:latency} and Table~\ref{tab:fps} give the time spent in each stage on the
+laptop CPU under mains power. The Phase~2a pipeline took 86.0~ms per frame, or
+11.62~frames per second (FPS), and face detection took almost two thirds of that. The
+classifier took 0.02~ms. The landmark stage of Phase~2b, timed separately in two runs,
+took 20.1~ms per face crop on average (21.1 and 19.1~ms). The test video had 0.99 tracked
+faces per frame, which adds 19.9~ms per frame and brings Phase~2b to about 106~ms per
+frame, or 9.4~FPS; the fastest direct Phase~2b run reached 9.9~FPS. Because landmarks are
+computed for every tracked face, this cost grows with the number of faces in view.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_latency.pdf}
+\caption{Mean time per frame for each pipeline stage on the laptop CPU (mains power). The
+landmark stage applies only to Phase~2b.}
+\label{fig:latency}
+\end{figure}
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Mean time per frame for each stage (Phase~2a, 300 frames, laptop CPU, mains power).}
+\label{tab:fps}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Stage} & \textbf{Time (ms)} & \textbf{Share of total} \\
+\midrule
+Frame reading                  & 10.0  & 11.6\% \\
+Face detection (YOLOv8n-face)  & 55.1  & 64.1\% \\
+Tracking (SORT)                & 20.1  & 23.4\% \\
+Classification                 & 0.02  & $<$0.1\% \\
+Selective blurring             & 0.87  & 1.0\% \\
+\midrule
+\textbf{Total per frame}       & \textbf{86.0} & \textbf{100\%} \\
+\textbf{Throughput}            & \multicolumn{2}{c}{\textbf{11.62 FPS}} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\paragraph{Battery power.}
+On battery the laptop was slower: landmark extraction took 33.5~ms per face, Phase~2b ran
+at 6.1~FPS, and two Phase~2a runs gave 9.1 and 7.5~FPS. The processor also warmed up over
+these consecutive runs, so these figures are a worst case rather than a precise
+measurement.
+
+% ── Power measurement: enable this paragraph after running the power measurement ──
+% \paragraph{Power draw.}
+% With the laptop on battery and all other applications closed, the idle laptop drew
+% X.X~W. Running the Phase~2a pipeline raised this to X.X~W and Phase~2b to X.X~W, so the
+% pipeline itself drew about X.X~W and X.X~W, or X.XX and X.XX joules per processed frame.
+
+\paragraph{Detection on other hardware.}
+Table~\ref{tab:det_hw} compares the detection time I measured with published measurements
+of the same class of model on other processors.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Time to detect faces in one frame with a nano-sized YOLO model on different
+processors. The laptop figure is my measurement; the others are published benchmarks.}
+\label{tab:det_hw}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}llllr@{}}
+\toprule
+\textbf{Processor} & \textbf{Unit} & \textbf{Format} & \textbf{Model} & \textbf{Time (ms)} \\
+\midrule
+Intel Core i5-13420H (laptop)                         & CPU & PyTorch & YOLOv8n-face & 55.1 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & PyTorch & YOLOv8n      & 508.6 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & ONNX    & YOLOv8n      & 198.7 \\
+Raspberry Pi 5 \cite{ultralytics_rpi}                 & CPU & NCNN    & YOLOv8n      & 94.3 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & CPU & QNN     & YOLO26n      & 53.3 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & GPU & QNN     & YOLO26n      & 17.2 \\
+Snapdragon 8 Elite Gen 5 phone \cite{ultralytics_qnn} & NPU & QNN     & YOLO26n      & 11.3 \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\paragraph{Projected throughput.}
+Using the method of Section~\ref{sec:evaldesign}, the remaining stages (31.0~ms for
+Phase~2a, plus 19.9~ms of landmarks for Phase~2b) were multiplied by 3.5 and added to the
+published detection time for each device (Table~\ref{tab:projection},
+Figure~\ref{fig:throughput}). For the Ray-Ban Meta glasses, whose Snapdragon AR1 has four
+CPU cores at 1.9~GHz \cite{qcom_ar1}, I scaled the Raspberry Pi~5 projection by the ratio
+of clock speeds (2.4/1.9). This assumes the AR1's cores do about as much work per clock
+cycle as the Pi's Cortex-A76 cores, which Qualcomm does not publish. The last row places
+the detector on a smartphone-class neural processing unit while the other stages stay on
+a Pi-class CPU; since the AR1's neural processing unit is smaller than a flagship phone's,
+this row is an upper bound. The chips in Snap Spectacles and Meta Aria Gen~2 are not
+published, so I could not project for them.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Measured and projected throughput of the full pipeline.}
+\label{tab:projection}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Device and configuration} & \textbf{Basis} & \textbf{Phase 2a} & \textbf{Phase 2b} \\
+\midrule
+Laptop, mains power                        & Measured    & 11.6 FPS    & 9.4 FPS \\
+Laptop, battery power                      & Measured    & 7.5-9.1 FPS & 6.1 FPS \\
+Raspberry Pi~5, PyTorch detector           & Projected   & 1.6 FPS     & 1.5 FPS \\
+Raspberry Pi~5, NCNN detector              & Projected   & 4.9 FPS     & 3.7 FPS \\
+Ray-Ban Meta CPU, NCNN detector            & Projected   & 3.9 FPS     & 2.9 FPS \\
+Pi-class CPU with phone-class NPU detector & Upper bound & 8.3 FPS     & 5.3 FPS \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_throughput.pdf}
+\caption{Measured and projected throughput. The battery bar for Phase~2a shows the faster
+of the two runs.}
+\label{fig:throughput}
+\end{figure}
+
+% ==============================================================================
+\subsection{Discussion}
+\label{sec:discussion}
+
+\subsubsection{What the cues contribute}
+\label{sec:disc_cues}
+
+The clearest finding of the ablation is that the size and position of a face decide
+almost every outcome. I added head pose and mouth movement expecting them to change both
+kinds of error: the veto should remove bystanders who happen to be close and central, and
+the speaking boost should rescue partners who are slightly off-centre. On the labelled
+clips they did very little, and the reasons are visible in the data.
+
+The veto rarely had anything to do. A bystander whose head is turned away is usually also
+small or off to the side, so the geometry rule already blurs them, and a person who is
+close and central is usually facing the wearer. The veto overruled the geometry rule in
+fewer than one detection in a hundred. The speaking boost was limited by design rather than
+by the landmarks: it only applies to faces that already pass the size test, and most missed
+partners were below it. MediaPipe found landmarks for those partners more often than for
+the ones the system kept, so the landmark cues were available. The rule simply never asked
+them.
+
+This also explains the gap between Phase~2a on Set~A and Phase~2b on Sets~B and~C. On the
+same clips, the geometry-only system keeps almost exactly as many partners as the full
+system, so the lower IPR on Sets~B and~C is not caused by the landmark cues. It comes from
+the samples. Set~A was labelled by me, with tracks I selected and a definition based on
+conversation, while Set~C was sampled blindly from every video and used the broader group
+definition, which counts friends sitting further away as partners. Those friends are
+exactly the faces that fall below the size threshold.
+
+The answer to RQ1 is therefore that the cues do separate partners from bystanders, but the
+work is done by geometry, and the landmark cues need a different role to add value. The
+most direct change would be to let the speaking cue lower the size threshold for a face
+that is facing the wearer and talking, rather than only relaxing the centre limit.
+
+\subsubsection{The balance between privacy and utility}
+\label{sec:disc_tradeoff}
+
+Every configuration is a point on a trade-off between protecting bystanders and keeping
+partners visible (Figure~\ref{fig:tradeoff}). Blanket blurring sits at one extreme. The live
+system sits close to it on privacy while recovering more than half of the partners, and
+when it keeps a face visible it is almost always right. For a privacy tool this is the
+right side to err on: a false positive exposes someone who did not consent, while a false
+negative only blurs a friend.
+
+The threshold sweep shows that the chosen threshold of 1.2\% is not the best point on that
+curve. Between 1.0\% and 1.5\%, PSR is flat while IPR changes by 20 percentage points, so
+1.0\% would have kept about three quarters of the partners visible with no extra exposure.
+I did not change the threshold in this thesis, because choosing it on the same clips used
+to evaluate it would overstate how well it generalises. The sweep does show where the
+useful range lies, and below 1.0\% the cost to bystanders rises quickly, because many
+bystanders in the interaction videos are also people standing a few metres away.
+
+The offline second pass reaches a similar point by a different route. Instead of lowering
+the size threshold, it uses time: a person who has been confirmed once, or who stays with
+the confirmed group for a long time, is kept visible. The two approaches address different
+misses. A lower threshold rescues faces that are small for the whole clip, while the second
+pass rescues faces that are confirmed late, and the error analysis shows both kinds exist.
+
+\subsubsection{Comparison with prior work}
+\label{sec:disc_prior}
+
+BystandAR protected 98.14\% of bystanders while keeping 96.27\% of intended subjects
+visible \cite{bystandar}. My live system matches its bystander protection closely but keeps
+far fewer partners. Two differences explain most of this. BystandAR knows where the wearer
+is looking from an eye tracker, which tells it directly who the wearer is engaging with; my
+system has to infer this from where faces appear in the frame, and a friend sitting off to
+one side looks, geometrically, much like a stranger. BystandAR was also evaluated in
+controlled sessions with planned interactions, while my clips are unscripted videos of
+card games and shopping, in which many partners sit across a table rather than standing in
+front of the wearer. The point of my approach is that it needs neither the eye tracker nor
+the microphone array. Glasses such as the Ray-Ban Meta have a camera but no eye tracking, so
+BystandAR's method cannot run on them, while mine can.
+
+Compared with EgoBlur and the SafeAR systems \cite{egoblur2023,safear2025,safearunity2025},
+my system adds the decision those tools lack, at almost no computational cost: the
+classifier takes a fraction of a millisecond, and the blurring stage is cheaper than
+blanket blurring because partners are skipped. Compared with the social-interaction work of
+Fathi et al.\ \cite{fathi2012social}, which classifies whole scenes, my results show that
+the same kind of geometric evidence can be used face by face and online, and they quantify
+how far it goes on its own.
+
+\subsubsection{Practicality and hardware}
+\label{sec:disc_hw}
+
+Whether the measured speed is practical depends on how the system is used. For
+\emph{recorded video} it is practical now. A five-minute recording is processed on the
+laptop in about 15 minutes, and the offline second pass, which gives the best balance, only
+makes sense for recordings anyway. This matches how blanket anonymization is used today:
+EgoBlur is applied to recordings from Meta's Aria glasses before the data is shared
+\cite{egoblur2023}.
+
+For \emph{live use on glasses}, the current implementation is too slow, as the Raspberry
+Pi~5 projection with the PyTorch detector shows. The problem is not the method: the
+classification that is the contribution of this thesis takes a fraction of a millisecond,
+and detection takes almost two thirds of the time. The detector comparison
+(Table~\ref{tab:det_hw}) shows how much is available without changing the method.
+Converting the same detector to NCNN makes it more than five times faster on the Pi~5,
+roughly tripling the projected frame rate, and moving it to a neural processing unit, which
+every current camera-glasses chip includes, removes most of what remains. A further gain is
+to run the detector only on some frames: people in a conversation move little between
+consecutive frames, and the tracker already predicts where each face will be. I did not
+test this, so I cannot report how much accuracy it would cost.
+
+Table~\ref{tab:glasses} compares my evaluation hardware with current camera glasses.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Evaluation hardware compared with current camera glasses, from manufacturer and
+press sources. Where a figure has not been released, the table says so.}
+\label{tab:glasses}
+\renewcommand{\arraystretch}{1.3}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\linewidth}
+                 >{\raggedright\arraybackslash}p{0.21\linewidth}
+                 >{\raggedright\arraybackslash}p{0.16\linewidth}
+                 >{\raggedright\arraybackslash}p{0.15\linewidth}
+                 >{\raggedright\arraybackslash}p{0.20\linewidth}@{}}
+\toprule
+\textbf{Device} & \textbf{Processor} & \textbf{AI accelerator} & \textbf{Battery} &
+\textbf{Where vision AI runs} \\
+\midrule
+Laptop (my evaluation) & Intel Core i5-13420H & none used & mains or battery & on the device (CPU) \\
+Raspberry Pi 5 (projection target) & 4$\times$ Cortex-A76, 2.4~GHz & none & external & on the device (CPU) \\
+Ray-Ban Meta \cite{qcom_ar1} & Snapdragon AR1 Gen~1 & Hexagon NPU & about 4~h & mostly phone and cloud \\
+Meta Ray-Ban Display \cite{gsmarena_display} & Snapdragon AR1 Gen~1, 2~GB RAM & Hexagon NPU & about 6~h & mostly phone and cloud \\
+Snap Spectacles, 5th gen.\ \cite{spectacles5} & 2$\times$ Snapdragon & not published & about 45~min & on the device \\
+Meta Aria Gen~2 \cite{aria2} & custom co-processor & custom & 6-8~h & on the device \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+The comparison supports three points. First, the Pi~5 is a reasonable stand-in for the CPU
+of these glasses: its four Cortex-A76 cores at 2.4~GHz are of the same class as the AR1's
+four cores at 1.9~GHz, which is why the Ray-Ban Meta projection sits slightly below the
+Pi~5. Second, every glasses platform has a neural processing unit and my evaluation used
+none, so the CPU-only figures are a worst case. Third, battery capacity is a tighter limit
+than speed. Spectacles run for about 45 minutes, and the Ray-Ban Meta sends most of its
+vision processing to the phone or the cloud. Running my pipeline continuously would compete
+for the same battery, which makes running the detector less often even more important.
+Keeping the processing on the glasses has a privacy benefit of its own: bystanders' faces
+never leave the device, which Meta itself identifies as a central concern for camera
+glasses \cite{meta_bystander}.
+
+\subsubsection{Implications for camera-glasses design}
+
+Three practical points follow for anyone building this into a product. First, the
+classification layer can be added to any device that already detects faces, at essentially
+no cost, because it only reads box positions and, optionally, landmarks. Second, a delay between capture and display or storage would let the live system apply
+the second-pass rules to the frames it is holding back. The partners confirmed late in
+Set~C were confirmed a median of about 11 seconds after they appeared, so the delay would
+have to be traded off against that. Third, the size
+threshold should depend on the camera's field of view and resolution, because the same
+person at the same distance covers a different share of the frame on different devices; a
+product would need to calibrate it rather than reuse my value.
+
+\subsubsection{Limitations}
+\label{sec:disc_limitations}
+
+\paragraph{The dataset.}
+All 21 videos came from public online sources, so I could not control the camera, its
+mounting or the frame rate, and I do not know who recorded them or why. The two categories
+also differ in setting: every interaction video is indoors, mostly at a table, and every
+bystander video is outdoors. A conversation in the street, or a crowded room in which the
+wearer is talking to no one, is not represented, and the system may behave differently
+there.
+
+\paragraph{The labels.}
+I labelled Set~A alone, and I was one of the annotators in Sets~B and~C while knowing how
+the system worked. Removing my labels does not change the majority label of any Set~C clip,
+but an evaluation without my involvement would still be cleaner. Set~B and Set~C used
+different partner definitions, and Set~A a third, so their results are not strictly
+comparable; the ablation on Set~C is the only like-for-like comparison of the cues.
+
+\paragraph{Tuning on the evaluation data.}
+I chose the classification thresholds by looking at my own videos, and I designed the
+second-pass rules after seeing the video-clip errors, then measured them on the same clips.
+The sensitivity checks make it unlikely that the exact values were overfitted, but only a
+fresh, separately labelled set of clips can show how well the thresholds and rules
+generalise.
+
+\paragraph{Speech without sound.}
+The speaking cue only sees whether the mouth is open. Laughing, eating or chewing look the
+same as speaking, and a partner who listens silently gets no help from this cue at all.
+
+\paragraph{The latch and missed detections.}
+The latch lasts only while the tracker reports the face. When the detector misses a partner
+for a single frame, the partner has to be confirmed again, which is usually quick but can
+briefly blur them.
+
+\paragraph{Speed and energy.}
+The Raspberry Pi~5 and glasses figures are projections built from published benchmarks and
+stated assumptions, not measurements on those devices, and the battery-power runs were
+affected by the processor heating up. % TODO(Akash): update once the power measurement is run.
+I have not measured how much energy the pipeline uses, which matters at least as much as
+speed for a device with a 45-minute battery.
