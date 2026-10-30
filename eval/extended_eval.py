@@ -33,7 +33,7 @@ import replay_classifier as R
 from whole_video import decide
 from config import LOGS_DIR
 
-ANNOTATORS = ["akash", "janindu", "yushmantha", "udari", "malindu"]
+ANNOTATORS = ["A", "B", "C", "D", "E"]   # A = myself; files are anonymised
 EXCLUDED = {"clip_067", "clip_071"}   # false detections (magazine cover, package)
 rows = []
 
@@ -113,7 +113,7 @@ def main():
 
     # 1. each annotator on their own, and kappa system vs annotator
     ann = {n: load_annotator(n) for n in ANNOTATORS}
-    letters = dict(zip(ANNOTATORS, "ABCDE"))
+    letters = {n: n for n in ANNOTATORS}
     for n in ANNOTATORS:
         lab = {c: v for c, v in ann[n].items() if c in gt}
         for name, p in systems.items():

@@ -20,7 +20,7 @@ behind each stage (Section~\ref{sec:theory}), the pipeline
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[node distance=7mm and 6mm]
-  \node[box, text width=28mm] (data) {\textbf{1. Dataset}\\21 first-person videos\\(EgoBlur, YouTube)};
+  \node[box, text width=28mm] (data) {\textbf{1. Dataset}\\21 first-person videos\\(Ego4D, YouTube)};
   \node[box, text width=28mm, right=of data] (pipe) {\textbf{2. Pipeline}\\detect, track,\\classify, blur};
   \node[box, text width=28mm, right=of pipe] (run) {\textbf{3. Processing}\\all videos, every\\decision logged};
   \node[data, text width=26mm, below=9mm of data] (lab) {Human labels\\Sets A, B, C};
@@ -52,8 +52,9 @@ filmed from a first-person viewpoint (a camera worn on the head or held at eye l
 contained faces large enough to be detected, and clearly belonged to one of two
 categories:
 \begin{itemize}
-    \item \textbf{Interaction} (14 videos), taken from the first-person video released with
-        Meta's EgoBlur work \cite{egoblur2023}. In these videos the wearer spends time with
+    \item \textbf{Interaction} (14 videos), taken from Ego4D \cite{grauman2022ego4d}, a
+        large public collection of first-person video recorded with consent by camera
+        wearers in many countries and released in five-minute clips. In these videos the wearer spends time with
         other people, mostly playing card or board games around a table, and in some videos
         shopping in small stores and talking to staff. They contain both partners and
         bystanders, for example other customers in a shop. Each is a five-minute segment.
@@ -576,7 +577,10 @@ C: Video clips      & 7~s clips with sound      & 5 (incl.\ myself) & 102 & 69 /
 \end{table}
 
 \textbf{Set A.} For the first evaluation I watched each video in full and labelled 66 face
-tracks across the 21 videos. % TODO(Akash): add how the 66 tracks were chosen.
+tracks across the 21 videos. The 66 tracks were picked by hand from the people who
+appear in the videos, not drawn by a fixed sampling rule, so Set~A may favour faces that
+are easy to see and judge. This is one of the reasons the later sets were sampled by fixed
+rules and labelled blind.
 A track was labelled a partner if the person had a face-to-face conversation with the
 wearer at any point. These labels could not be reused later: SORT numbers tracks in order
 of appearance, so when the detections changed slightly between the Phase~2a and Phase~2b
