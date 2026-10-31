@@ -1,0 +1,131 @@
+\documentclass[12pt]{article}
+
+% ── Page geometry: left 40mm, right 15mm, top/bottom 25mm ──────────────────────
+\usepackage[a4paper, left=40mm, right=15mm, top=25mm, bottom=25mm]{geometry}
+
+% ── Fonts: Times New Roman equivalent ─────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+
+% ── Spacing ───────────────────────────────────────────────────────────────────
+\usepackage{setspace}
+\usepackage{parskip}
+
+% ── Math, tables, graphics, diagrams ──────────────────────────────────────────
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc}
+\usepackage{float}
+
+% ── Citations: IEEE style, numbered in order of first use ──────────────────────
+\usepackage{cite}
+\usepackage{url}
+
+% ── Section numbering format: 1.0 / 1.1. / 1.1.1 ──────────────────────────────
+\usepackage{tocloft}
+\setlength{\cftsecnumwidth}{4em}
+\setlength{\cftsubsecnumwidth}{5em}
+\setlength{\cftsubsubsecnumwidth}{5.5em}
+\renewcommand{\thesection}{\arabic{section}.0}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}.}
+\renewcommand{\thesubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% ── Hyperlinks ────────────────────────────────────────────────────────────────
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=black, citecolor=black}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% ── Every chapter starts on a new page (no blank pages in between) ─────────────
+\newcommand{\chapterstart}{\clearpage}
+
+% ── Shrinks a table to the text width only when it would be wider ──────────────
+\newsavebox{\fitbox}
+\newcommand{\fitwidth}[1]{\sbox{\fitbox}{#1}%
+  \ifdim\wd\fitbox>\linewidth\resizebox{\linewidth}{!}{\usebox{\fitbox}}%
+  \else\usebox{\fitbox}\fi}
+
+% ── Shared styles for flow diagrams ───────────────────────────────────────────
+\tikzset{
+  box/.style={rectangle, rounded corners=2pt, draw=black!70, fill=black!4,
+              align=center, minimum height=9mm, inner sep=4pt, font=\small},
+  data/.style={rectangle, draw=black!70, fill=white, align=center,
+               minimum height=8mm, inner sep=4pt, font=\small},
+  decision/.style={diamond, aspect=2.2, draw=black!70, fill=white, align=center,
+                   inner sep=1pt, font=\small},
+  term/.style={rectangle, rounded corners=8pt, draw=black!70, fill=black!12,
+               align=center, minimum height=8mm, inner sep=4pt, font=\small},
+  arr/.style={-{Latex[length=2.2mm]}, thick, draw=black!75},
+  lbl/.style={font=\footnotesize, inner sep=2pt}
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  {\Large\bfseries Context-Aware Privacy for AR:\par}
+  {\Large\bfseries Real-Time Selective Anonymization via Egocentric Interaction Detection on Edge Devices\par}
+  \vspace{2.5cm}
+  {\large\bfseries A PROJECT REPORT SUBMITTED BY\par}
+  \vspace{0.8cm}
+  {\large Akash Abeywickrame\par}
+  {\large (S/20/302)\par}
+  {\large Supervised by : Dr. Hakim Usoof \par}
+  \vspace{1.8cm}
+  {\large to the\par}
+  \vspace{0.6cm}
+  {\large\bfseries DEPARTMENT OF STATISTICS AND COMPUTER SCIENCE\par}
+  \vspace{1.2cm}
+  {\large in partial fulfillment of the requirements of the\par}
+  \vspace{0.6cm}
+  {\large\bfseries Degree of Bachelor of Science (Honours) in Computer Science\par}
+  \vspace{1.2cm}
+  {\large of the\par}
+  \vspace{0.6cm}
+  {\large\bfseries UNIVERSITY OF PERADENIYA, SRI LANKA\par}
+  \vfill
+  {\large 8th of June, 2026\par}
+\end{titlepage}
+
+% ── Front matter (roman page numbers) ─────────────────────────────────────────
+\pagenumbering{roman}
+\onehalfspacing
+\input{chapters/front_matter}
+
+\clearpage
+\begin{singlespace}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\end{singlespace}
+
+% ── Main text (arabic page numbers, each chapter on a new page) ──────────────
+\clearpage
+\pagenumbering{arabic}
+\input{chapters/introduction}
+\chapterstart
+\input{chapters/literature_review}
+\chapterstart
+\input{chapters/methodology}
+\chapterstart
+\input{chapters/results_discussion}
+\chapterstart
+\input{chapters/conclusion}
+
+\chapterstart
+\begin{singlespace}
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{singlespace}
+
+\end{document}

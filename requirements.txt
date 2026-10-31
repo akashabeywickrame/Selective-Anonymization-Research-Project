@@ -5,15 +5,12 @@
 opencv-python>=4.9.0
 numpy>=1.26.0
 
-# Detection — YOLOv8n-face
+# Detection
 ultralytics>=8.2.0
 
-# Tracking — ByteTrack (via boxmot which bundles multiple trackers)
-boxmot>=10.0.0
-
-# GPU inference (comment out if using CPU / Raspberry Pi)
-# onnxruntime-gpu>=1.18.0      # uncomment for ONNX export on GPU
-# onnxruntime>=1.18.0          # uncomment for ONNX on CPU (RPi5)
+# Tracking (SORT — no boxmot needed)
+filterpy>=1.4.5
+scipy>=1.13.0
 
 # Utilities
 tqdm>=4.66.0

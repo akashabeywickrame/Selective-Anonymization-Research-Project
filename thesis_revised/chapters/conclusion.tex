@@ -1,0 +1,100 @@
+% ==============================================================================
+%  CHAPTER 5 — CONCLUSION
+% ==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+I set out to blur bystanders in first-person video while keeping the people the wearer is
+with visible, using only the glasses' camera and without recognising anyone. This chapter
+answers the three research questions from Section~\ref{sec:rq}, summarises the
+contributions, and sets out what I would do next.
+
+\subsection{Answers to the Research Questions}
+
+\paragraph{RQ1: Can simple visual cues separate partners from bystanders without
+identity recognition?}
+Yes, with a clear bias towards privacy, and mostly through geometry. The size and position
+of a face alone separated the two groups well enough that, on the video clips, the system
+left only one of 33 bystanders visible, and 39 of the 40 faces it kept visible were genuine
+partners. The ablation showed that head pose and mouth movement added almost nothing on top
+of geometry in this dataset: the head-pose veto rarely had a case the geometry rule had not
+already handled, and the speaking cue could only act on faces that already passed the size
+test. The cues do not recognise everyone the wearer is with. Partners whose faces appear
+small, such as friends across a table, fall below the size threshold, and some are
+confirmed only after a delay. Neither failure needs identity information to fix.
+
+\paragraph{RQ2: How well does selective anonymization protect bystanders and preserve
+partners compared with blurring every face?}
+Blanket blurring protects every bystander but keeps no partner visible. The live system
+protected 96.97\% of bystanders while keeping 56.52\% of partners visible. For recorded
+video, deciding once per person for the whole video, with the group rule and with the
+pieces of each person's track joined by position and timing, raised partner preservation
+to 85.51\% while still protecting 90.91\% of bystanders. Tested on held-out videos, letting the head-pose cue
+lower the size threshold for faces turned towards the wearer raised the live system's
+partner preservation to 78.26\% while blurring 90.91\% of bystanders, and keeping the
+latch for as long as the tracker keeps a face raised it to 60.87\% at no cost to
+bystanders. Selective anonymization therefore gives up a few
+percentage points of bystander protection to recover most of what blanket blurring
+destroys. These figures rest on labels from five annotators with almost perfect agreement,
+held whichever annotator was taken as the reference and when whole videos were resampled,
+but come from 21 videos, so they should be confirmed on more varied footage.
+
+\paragraph{RQ3: How much computation does it need, and is it feasible on wearable-class
+hardware?}
+The classification itself costs almost nothing; the cost lies in face detection and,
+for Phase~2b, in landmark extraction. With the detector exported to OpenVINO, the pipeline
+runs in real time on a laptop CPU, at 31~FPS for Phase~2a and 22~FPS for Phase~2b, while
+still finding 99.7\% of the faces the original detector found and making the same decision
+on every labelled clip. On battery, the pipeline added about 5~W to the laptop's draw, or
+about half a joule per frame. On the CPU of current
+camera glasses alone it is projected at only 4 to 6~FPS, but with detection on the neural
+processing unit these chips already contain, Phase~2a is projected at about 18~FPS, enough
+for a live view, and Phase~2b at 8 to 12~FPS. Live operation on glasses is therefore
+feasible, with landmark extraction as the remaining stage to move off the CPU. These device
+figures are projections from published benchmarks and have not been measured on the
+devices themselves.
+
+\subsection{Contributions}
+
+\begin{itemize}
+  \item A selective anonymization pipeline that separates interaction partners from
+        bystanders using face geometry, head pose and mouth movement from a single RGB
+        camera, with no face recognition and no stored identity.
+    \item An offline pass for recorded video that decides once per person (a retroactive
+        latch, a group rule and track joining without face recognition) and keeps the people
+        the wearer is with visible for their whole time on screen.
+  \item An evaluation method for this task: blind labelling of short video clips with
+        sound by several annotators, agreement measured with Cohen's and Fleiss' kappa,
+        bystander protection and partner preservation reported separately with confidence
+        intervals, every system decision checked against its rendered output, and a replay
+        of the classifier on logged cues that measures each cue and threshold on the same
+        labels.
+  \item A breakdown of where the processing time goes, with projections to a
+        Raspberry Pi~5 and to current camera-glasses hardware.
+\end{itemize}
+
+\subsection{Future Work}
+
+\paragraph{Confirm the improvements on new data.}
+Three improvements were tested after the main evaluation: the adaptive size threshold,
+the persistent latch with an optional output delay, and the offline second pass. The
+adaptive threshold was cross-validated across videos, but all three were developed with
+knowledge of the same labelled clips. I would label a fresh set of clips from different
+videos, with annotators who do not know the system, and measure them on it, then make the
+best of them the default.
+
+\paragraph{Move the landmark cues earlier in the rule.}
+The ablation and the adaptive threshold together show that head pose is most useful when it
+decides how small a face may be, not as a veto on faces that are already close. The next
+version of the classifier should be designed around that, and the speaking cue should be
+given more time to accumulate evidence on small faces.
+
+\paragraph{Measure on real hardware.}
+I would run the pipeline on a Raspberry Pi~5 with the detector exported to NCNN, and on
+camera glasses with the detector on the NPU, measuring frame rate and power draw, and repeat
+the labelled evaluation with detection on every second frame.
+
+\paragraph{Broaden the dataset.}
+The dataset lacks outdoor conversations and indoor crowds in which the wearer talks to no
+one. Recording such scenes with consenting participants would also allow audio to be used
+alongside the mouth cue, which would distinguish speaking from laughing or eating.

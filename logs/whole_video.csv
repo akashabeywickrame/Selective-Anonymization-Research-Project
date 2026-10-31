@@ -1,0 +1,10 @@
+config,tp,fn,fp,tn,psr,ipr,prec,f1
+whole-track decision,49,20,2,31,93.94,71.01,96.08,81.67
+whole-track + stitching,53,16,3,30,90.91,76.81,94.64,84.8
+whole-track + group rule,54,15,2,31,93.94,78.26,96.43,86.4
+whole-track + stitching + group rule,59,10,3,30,90.91,85.51,95.16,90.08
+whole-track + stitching + group + adaptive (cross-validated),59,10,4,29,87.88,85.51,93.65,89.39
+   (in-sample) adaptive low=0.004,66,3,12,21,63.64,95.65,84.62,89.8
+   (in-sample) adaptive low=0.006,66,3,8,25,75.76,95.65,89.19,92.31
+   (in-sample) adaptive low=0.008,65,4,7,26,78.79,94.2,90.28,92.2
+   (in-sample) adaptive low=0.01,61,8,4,29,87.88,88.41,93.85,91.04

@@ -1,0 +1,38 @@
+ANNOTATION INSTRUCTIONS (video clips)
+=====================================
+
+You will watch short video clips filmed by a camera worn by a person
+(the "camera wearer"). In each clip ONE face is marked with a yellow box.
+Please turn the SOUND ON.
+
+For the face in the yellow box, decide:
+
+  p  =  Interaction partner
+        This person is part of the camera wearer's group or conversation.
+        That includes someone talking to the camera wearer, AND someone who
+        is with them but not speaking right now, for example a friend
+        sitting at the same table, playing the same game, or listening to
+        the conversation.
+
+  b  =  Bystander
+        This person is NOT part of the camera wearer's group. For example a
+        stranger walking past, someone in the background, or someone in a
+        different group talking to other people.
+
+If you genuinely cannot tell, leave it blank ("Can't tell").
+
+HOW TO DO IT
+------------
+Easiest: open annotate.html in Chrome or Edge (double-click it). Type your
+name, watch each clip, click a button, and at the end click
+"Download my answers". Send the downloaded annotations_YOURNAME.csv back.
+
+If the page doesn't work: play the files in clips/ yourself, fill the label
+column of annotator_template.csv with p or b, and save it as
+annotations_YOURNAME.csv.
+
+NOTES
+-----
+- There is no right or wrong answer; use your best judgement.
+- Judge only the person in the yellow box, and only what happens in the clip.
+- Each clip is independent.

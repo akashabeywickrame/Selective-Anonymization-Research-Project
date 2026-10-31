@@ -1,0 +1,117 @@
+\chapter{Conclusion}
+\label{sec:conclusion}
+
+\section{Summary of Contributions}
+\label{sec:conclusion_summary}
+
+In this dissertation, I presented a context-aware, real-time privacy framework for
+egocentric video that selectively anonymizes bystanders while preserving the faces
+of active interaction partners. The framework operates as a five-stage sequential
+pipeline: face detection via YOLOv8n-face, multi-face tracking via SORT, interaction
+cue extraction, heuristic classification, and selective Gaussian blur anonymization.
+All stages execute on CPU-only hardware without GPU acceleration, biometric face
+recognition, or cloud offloading.
+
+The primary contribution of my research is the \emph{multi-cue interaction
+classifier}, which fuses four complementary signals derived from two information
+sources. The first two cues (face area ratio and center distance) are extracted
+from bounding-box geometry alone and require no additional model inference. The
+second two cues (head-pose yaw via PnP and Mouth Aspect Ratio via MediaPipe Face
+Landmarker) require facial landmark extraction but provide qualitatively different
+information: yaw provides a hard veto for faces that are turned away from the
+camera, while MAR-based V-VAD provides a temporal boost for faces exhibiting
+sustained lip movement. The classifier combines these cues through a priority-ordered
+decision function with temporal hysteresis and interaction latching, achieving PSR
+= 87.50\% and IPR = 84.62\% in the Phase~2a geometry-only configuration, evaluated
+against a ground-truth dataset of 66 unique face tracks from 21 egocentric video clips.
+With landmark cues enabled (Phase~2b), a blind four-annotator evaluation of 29 faces
+gave PSR = 100\% and IPR = 57.14\%, and a larger blind evaluation of 102 video
+clips by five annotators with almost perfect agreement ($\kappa = 0.887$) confirmed this
+with PSR = 96.97\% and IPR = 56.52\%. For recorded video, an offline second pass
+that applies the latch retroactively and recognises the members of the wearer's
+group raised IPR to 78.26\% at PSR = 93.94\% (F$_1$ = 86.40\%).
+
+A secondary contribution is the \emph{systematic comparison with the blanket-blurring
+baseline}. The baseline achieves PSR = 100\% but IPR = 0\%, making it unsuitable for
+any use case in which the wearer needs to interact with people in the scene. The
+proposed system recovers 84.62\% of interaction-partner utility (IPR) at a cost of
+12.5 percentage points of PSR relative to the baseline. This trade-off is
+appropriate for a system whose primary objective is to protect bystanders without
+degrading the wearer's social experience. With the offline second pass, the
+system preserved 78.26\% of the people in the wearer's group while still blurring
+93.94\% of bystanders, demonstrating that selective anonymization can recover most
+of the social value that blanket blurring destroys while keeping strong bystander
+protection.
+
+A third contribution is the \emph{edge-deployable implementation}. The pipeline is
+designed from the outset to run on commodity CPU hardware. The measured throughput
+of 11.62~FPS (Phase~2a) and approximately 9.4~FPS (Phase~2b) on a laptop CPU, with
+estimated Raspberry Pi~5 throughput of 3.3 and 2.7~FPS respectively,
+demonstrates that the approach is feasible on CPU-only edge hardware, and the
+per-stage analysis identifies a clear path to higher frame rates through model
+quantisation and hardware acceleration.
+
+Finally, the \emph{evaluation methodology} that I developed for this project,
+which includes blind annotation of still frames and of short video clips with
+sound, inter-annotator agreement measurement and verification of the system's
+decisions against its rendered output, forms a reusable protocol for future
+egocentric privacy research.
+
+\section{Relation to Prior Work}
+\label{sec:conclusion_prior}
+
+Compared to the most relevant prior system, BystandAR \citep{bystandar} (PSR~98.14\%,
+IPR~96.27\%), the proposed framework achieves lower accuracy but eliminates the
+hardware dependency on eye gaze trackers and directional microphones. Compared to
+blanket-blurring systems such as EgoBlur \citep{egoblur2023} and SafeAR
+\citep{ref:safear2025}, the proposed framework introduces the context-aware
+classification layer that all prior blanket systems lack.
+
+To my knowledge, the proposed system is the first to combine:
+(i) real-time selective anonymization in egocentric video,
+(ii) CPU-only edge deployment without biometric recognition,
+(iii) a multi-cue fusion of geometry, head pose, and V-VAD, and
+(iv) a quantitative evaluation distinguishing PSR from IPR as separate privacy and
+utility metrics.
+
+\section{Future Work}
+\label{sec:conclusion_future}
+
+I identify several directions for future investigation.
+
+\textbf{Learned classifier.} The heuristic decision function could be replaced with
+a lightweight learned binary classifier (e.g., a shallow MLP or logistic regression
+model trained on the cue vectors) that generalises better across environments and
+interaction styles than hand-tuned thresholds.
+
+\textbf{Audio-visual fusion.} Incorporating a microphone-based voice activity
+detector alongside the visual V-VAD cue would resolve ambiguous lip-movement cases
+and substantially improve IPR in noisy environments.
+
+\textbf{Independent and larger-scale evaluation.} The video-clip protocol should
+be applied to a fresh set of clips, to test the offline second pass independently,
+and to a larger, more diverse dataset, so that all configurations can be compared on
+a common ground truth.
+
+\textbf{Group recognition in live operation.} The retroactive latch and the
+friend-group rule currently need the whole recording. Delaying the output stream
+by a few seconds would give the system time to confirm partners and group members
+before their frames are shown, bringing most of the benefit of the second pass to
+live operation.
+
+\textbf{Adaptive proximity threshold.} Most Phase~2b false negatives fell below the
+fixed area threshold. Relaxing $\tau_{\mathrm{area}}$ when landmark cues confirm a
+frontal, speaking face, and improving landmark coverage on small faces, are
+direct routes to higher IPR without weakening PSR.
+
+\textbf{On-device deployment.} Direct benchmarking on the Raspberry Pi~5 with ONNX
+INT8 quantised models, combined with the input-resolution and batching optimisations
+described in Section~\ref{sec:disc_fps}, would validate or refine the throughput projection and
+identify any architecture-specific performance bottlenecks not captured by the
+current scaling-factor estimate.
+
+\textbf{Consent and transparency mechanisms.} The current system operates
+invisibly from the bystander's perspective. Future work could integrate BystandARIA's
+visible-light communication approach \citep{ref:bystandaria} as a complementary
+consent channel, allowing bystanders to actively signal their privacy preferences
+to the system.

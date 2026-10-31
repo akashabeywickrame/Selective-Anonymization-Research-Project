@@ -1,0 +1,7 @@
+pair,kappa,agreement_pct,n_shared,interpretation
+A vs D,0.664,88.9,27,substantial
+A vs F,0.557,82.8,29,moderate
+A vs G,0.307,75.9,29,fair
+D vs F,0.724,88.9,27,substantial
+D vs G,0.614,85.2,27,substantial
+F vs G,0.657,86.2,29,substantial

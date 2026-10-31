@@ -1,0 +1,229 @@
+% ==============================================================================
+%  CHAPTER 2 — LITERATURE REVIEW
+% ==============================================================================
+\section{Literature Review}
+\label{sec:lit}
+
+The chapter has two parts. Section~\ref{sec:lit_bg} covers the background concepts and
+techniques my system is built from: camera glasses and the bystander problem,
+first-person vision, face detection, tracking, facial landmarks, privacy by design, and
+edge hardware. Section~\ref{sec:lit_related} reviews related work: studies of how
+bystanders and wearers feel about camera glasses, and systems that try to protect
+bystanders. Section~\ref{sec:gap} compares those systems and states the research gap.
+
+% ------------------------------------------------------------------------------
+\subsection{Background}
+\label{sec:lit_bg}
+
+\subsubsection{Camera glasses and the bystander privacy problem}
+
+Camera glasses differ from phones and fixed security cameras in two ways that matter for
+privacy. The camera sits at eye level and points wherever the wearer looks, so it captures
+faces at close range during personal moments. And the device is worn all day, so it
+follows the wearer into homes, cafes, clinics and classrooms, which are the places where
+people expect the most privacy. A \emph{bystander} in this setting is anyone captured by
+the camera who has no part in what the wearer is doing. Because the camera is worn rather
+than held, bystanders often do not realise they are being recorded at all.
+
+Current commercial devices handle this mainly through a recording light. The Ray-Ban Meta
+glasses, for example, light an LED next to the camera while recording, and Meta has
+published a white paper describing its approach to bystander privacy for these devices
+\cite{meta_bystander}.
+
+\subsubsection{First-person vision}
+
+First-person video has properties that third-person video does not. The camera moves with
+the wearer's head, which causes motion blur, sudden changes of view and large changes in
+the size of faces as the wearer moves towards or away from people. It also has a useful
+regularity: people turn their head towards what they are attending to, so the object of
+attention usually sits near the centre of the frame. Li et al.\ measured this
+\emph{centre bias} directly when predicting gaze in egocentric video, and found the
+centre of the frame to be a strong predictor of where the wearer is looking
+\cite{li2013gaze}. For social scenes this suggests that the person the wearer is talking
+to will usually appear near the centre and, being close, appear large.
+
+\subsubsection{Face detection}
+
+A face detector finds every face in an image and returns a bounding box and a confidence
+score for each. Three families are relevant to wearable devices. Haar cascades, the
+classical approach, slide hand-designed features over the image; they are fast but miss
+faces that are turned, small or blurred, which are common in first-person video.
+BlazeFace is a small neural detector designed by Google for sub-millisecond detection on
+mobile GPUs \cite{bazarevsky2019blazeface}. It is tuned for one or two large faces, as in
+video calls. YOLO (``you only look once'') detectors predict all boxes in a single pass of
+a convolutional network and are among the most widely used real-time detectors. The
+Ultralytics YOLOv8 family \cite{yolov8} comes in sizes from nano to extra large, and the
+nano model has been retrained by the community specifically for faces.
+
+\subsubsection{Multi-object tracking}
+
+A detector treats each frame on its own, so it cannot say that a face in one frame is the
+same person as a face in the next. A tracker links detections over time and gives each
+person an identity number. SORT (Simple Online and Realtime Tracking) \cite{sort2016} does
+this with two classical tools: a Kalman filter that predicts where each box will be in the
+next frame, and the Hungarian algorithm, which finds the best one-to-one match between
+predicted boxes and new detections. SORT uses only the position and motion of boxes. More
+accurate trackers such as DeepSORT add an appearance model, a small neural network that
+turns each face into a numerical descriptor so that a person can be recognised after being
+hidden. For a privacy system that descriptor is a biometric template, which is exactly
+what such a system should avoid creating.
+
+\subsubsection{Facial landmarks, head pose and visual speech}
+
+Facial landmark models locate fixed points on a face, such as the corners of the eyes and
+mouth. The MediaPipe face mesh \cite{kartynnik2019facemesh}, part of Google's MediaPipe
+framework \cite{lugaresi2019mediapipe}, predicts several hundred such points from a single
+face image in real time on a phone.
+
+Two cues follow from landmarks. The first is head pose. Given the image positions of a few
+landmarks and their approximate positions on a generic three-dimensional face, the
+rotation of the head can be recovered by solving the Perspective-$n$-Point (PnP) problem
+\cite{lepetit2009epnp}. The left and right rotation, called yaw, shows whether a person is
+facing the camera. The second is mouth movement. Soukupov\'a and \v{C}ech showed that the
+ratio between the height and width of the eye, computed from landmarks, reliably detects
+blinks in real time \cite{soukupova2016}. The same idea applied to the mouth gives a mouth
+aspect ratio that is close to zero when the lips are closed and grows as the mouth opens.
+Measuring how often the mouth is open over a short window gives a visual voice activity
+detector: an estimate of whether a person is speaking that needs no audio.
+
+\subsubsection{Privacy by design}
+
+Privacy by Design is a set of principles for building privacy into a system from the start
+rather than adding it afterwards \cite{cavoukian2009pbd}. The most relevant principle here
+is data minimisation: process only what the task needs and keep nothing longer than
+necessary. For this problem the principle rules out face recognition entirely. A system
+that recognised the wearer's friends would need to store their faces, creating a
+biometric database, which is a larger privacy risk than the one it addresses. It also
+argues for processing on the device, so that raw video, and the faces in it, never have to
+leave the glasses.
+
+\subsubsection{Edge hardware for wearable vision}
+
+Wearable devices have small batteries and must not get hot next to the wearer's head.
+Their processors combine a few low-power ARM CPU cores with a dedicated neural processing
+unit (NPU) for running neural networks efficiently. The Qualcomm Snapdragon AR1 platform
+used in the Ray-Ban Meta glasses, for example, has a quad-core CPU and a Hexagon NPU
+\cite{qcom_ar1}. The Raspberry Pi~5, with four ARM Cortex-A76 cores at 2.4~GHz, is a
+popular and well-benchmarked board whose CPU is in the same class \cite{ultralytics_rpi}.
+Karakostas et al.\ built a real-time wearable AR system for egocentric vision on edge
+hardware and showed that a multi-stage pipeline of detection, tracking and context
+inference can meet real-time limits on ARM processors when each stage is optimised for the
+hardware \cite{karakostas2024}. Khan et al.\ showed that compact deep learning models can
+recognise first-person context directly on a wearable device without sending data to the
+cloud \cite{khan2021}.
+
+% ------------------------------------------------------------------------------
+\subsection{Related Work}
+\label{sec:lit_related}
+
+\subsubsection{Studies of bystanders and wearers}
+
+Denning et al.\ ran 12 field sessions in cafes and interviewed 31 bystanders who had been
+near someone wearing AR glasses \cite{denning2014}. Many were uncomfortable even when the
+device was not recording, because they had no way to check what it was doing, and they
+found existing measures such as physical lens covers or opt-out signals inadequate. Two
+lessons from that study shaped my design: a privacy mechanism should not depend on
+bystanders noticing it, and it should not require bystanders to do anything to be
+protected.
+
+O'Hagan et al.\ studied how bystanders' expectations change with context
+\cite{ohagan2023}. People were far more concerned in professional and medical settings than
+in casual public spaces, and the perceived intent of the wearer strongly affected whether
+recording was acceptable. Their conclusion, that one fixed anonymization rule cannot meet
+these varying needs, is the main motivation for making my system depend on the social
+situation rather than blurring everyone.
+
+Bhardwaj et al.\ studied the wearer's side and found that camera-glasses users often feel
+responsible for the people around them but consider the recording light a poor tool for
+meeting that responsibility \cite{bhardwaj2024}. Shao et al.\ surveyed 525 people and
+interviewed 20 wearer and bystander pairs \cite{mindthegap2026}. Bystanders consistently
+wanted more transparency and protection than wearers were willing to give, and in sensitive
+settings 65\% to 90\% said they would take defensive action. The authors compared twelve
+privacy-enhancing technologies and found each was caught in at least one of four
+trade-offs, one of which is protection versus utility. Blanket blurring sits at the
+extreme protection end of that trade-off.
+
+\subsubsection{Blanket anonymization systems}
+
+EgoBlur, released by Meta with its Aria research glasses, detects and blurs faces and
+licence plates in recorded first-person video before the data is shared
+\cite{egoblur2023}. SafeAR integrates face detection and blurring into an AR rendering
+pipeline without a large drop in frame rate \cite{safear2025}, and SafeARUnity packages
+similar processing as middleware between the camera and AR applications, evaluated in a
+location-based AR game \cite{safearunity2025}. These systems show that face anonymization
+can be fast and practical, but none of them can tell a companion from a stranger, so every
+companion is blurred too.
+
+\subsubsection{Context-aware selective systems}
+
+BystandAR by Corbett et al.\ is the closest system to mine \cite{bystandar}. It runs on a
+Microsoft HoloLens~2 and decides who the wearer is engaging with by combining the wearer's
+eye gaze, a directional microphone array focused on the wearer's speech, and spatial
+mapping. In a 16-participant study it protected 98.14\% of bystanders while keeping
+96.27\% of intended subjects visible, at 52.6 frames per second, with all processing on the
+headset. The same group later argued that no current approach fully balances protection,
+usability and consent in mixed reality \cite{corbett2024ieee}. BystandAR shows that
+selective anonymization works well when the device knows where the wearer is looking. The
+difficulty is that eye trackers and microphone arrays are found on high-end headsets, not
+on everyday camera glasses.
+
+\subsubsection{Consent and signalling systems}
+
+BystandARIA by Al Aaraj takes a different route: a bystander carries a small LED device
+that broadcasts a privacy request using visible light, and the AR system blurs that
+person's face when it detects the signal \cite{bystandaria}. This gives bystanders real
+control, but only those who carry the device are protected, and most will not.
+
+\subsubsection{Detecting social interaction in first-person video}
+
+Fathi et al.\ showed that social interactions can be recognised from first-person video
+alone \cite{fathi2012social}. They used the faces visible to the wearer, where those faces
+were and which way they were looking, to classify scenes as dialogue, discussion or
+monologue. Their work supports the idea behind my cues: who the wearer is interacting with
+leaves visible traces in the positions and orientations of faces. Their method, however,
+labels whole scenes offline and does not decide, face by face, who should be anonymized,
+nor is it designed for wearable hardware.
+
+% ------------------------------------------------------------------------------
+\subsection{Research Gap}
+\label{sec:gap}
+
+Table~\ref{tab:related_work} compares the systems reviewed above on the properties the
+problem requires.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{Comparison of related bystander privacy systems.}
+\label{tab:related_work}
+\renewcommand{\arraystretch}{1.3}
+\fitwidth{\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{System} & \textbf{Selective} & \textbf{On-device} & \textbf{No biometrics} &
+\textbf{Camera only} & \textbf{No bystander device} \\
+\midrule
+EgoBlur \cite{egoblur2023}           & $\times$   & $\times$   & \checkmark & \checkmark & \checkmark \\
+SafeAR \cite{safear2025}             & $\times$   & \checkmark & \checkmark & \checkmark & \checkmark \\
+SafeARUnity \cite{safearunity2025}   & $\times$   & \checkmark & \checkmark & \checkmark & \checkmark \\
+BystandAR \cite{bystandar}           & \checkmark & \checkmark & \checkmark & $\times$   & \checkmark \\
+BystandARIA \cite{bystandaria}       & \checkmark & \checkmark & \checkmark & $\times$   & $\times$   \\
+\textbf{This work}                   & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}}
+\end{singlespace}
+\end{table}
+
+Three observations follow from it. First, the systems that work with only a camera blur
+everyone, so they cannot preserve the people the wearer is with. Second, the systems that
+are selective depend on hardware that everyday camera glasses lack: an eye tracker and
+microphone array in the case of BystandAR, and a device carried by each bystander in the
+case of BystandARIA. Third, the first-person vision literature shows that the size,
+position and orientation of faces carry information about social interaction
+\cite{fathi2012social,li2013gaze}, but this has not been used to decide which faces to
+anonymize.
+
+The gap this research fills is therefore a selective anonymization method that separates
+interaction partners from bystanders using only the RGB camera, without recognising
+identities, and with computation light enough for wearable hardware. Because no labelled
+dataset for this task exists, the research also needs an evaluation method that measures
+bystander protection and partner preservation against human judgement.

@@ -1,0 +1,343 @@
+% ==============================================================================
+%  CHAPTER 1 — INTRODUCTION
+% ==============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Background}
+
+Camera glasses have moved out of research labs and into ordinary shops. Meta's Ray-Ban
+glasses look like normal sunglasses but carry a 12-megapixel camera
+\cite{gsmarena_display}, and devices such as the Apple Vision Pro and Snap Spectacles
+record the world from the wearer's eye level. The market is no longer small. Meta and its
+manufacturing partner EssilorLuxottica reported selling about 2 million Ray-Ban Meta
+glasses between the launch in October 2023 and February 2025, and about 7 million Ray-Ban
+and Oakley smart glasses in 2025 alone, more than three times the number sold in 2024
+\cite{uploadvr2026sales}. Each of those devices is a camera that sits on someone's face,
+points wherever they look, and can start recording with a tap or a voice command.
+
+Video recorded this way is called \emph{egocentric} or first-person video: the camera
+sees what the wearer sees, and moves whenever the wearer turns their head. Large
+first-person video collections such as Ego4D \cite{grauman2022ego4d} show how much of
+daily life these cameras capture: conversations at home, meals with friends, shopping,
+and crowds in the street. That is what makes the devices useful for memory aids,
+navigation, accessibility and live translation, and it is why manufacturers are adding
+assistants that look at the scene continuously rather than only when the wearer presses a
+button. It is also what makes them a privacy problem, because most of the people in that
+footage never chose to be recorded.
+
+\subsection{Bystander Privacy as a Public Concern}
+\label{sec:concern}
+
+A smartphone held up to film someone is visible, and the person being filmed can at
+least see it happening. Camera glasses remove that signal. The camera sits where a pair of
+ordinary glasses would, the wearer does not need to raise anything, and the only
+indication that recording has started is a small light on the frame. The people most
+affected by this are not the wearers, who bought the device and agreed to its terms, but
+the people around them, who did neither.
+
+This concern is not new, and it has repeatedly turned into action rather than staying a
+theoretical worry. When Google Glass appeared in 2013 and 2014, some bars and restaurants
+asked wearers to take the device off, and the Cinema Exhibitors' Association, whose
+members run most cinemas in the United Kingdom, asked customers not to wear it in
+auditoriums \cite{nbc2014glass}. The device became so associated with covert recording
+that its wearers were given a nickname of their own, and it never reached the general
+consumer market.
+
+The same concern has followed the current generation. When Facebook launched its first
+Ray-Ban camera glasses in Ireland and Italy in 2021, the Irish Data Protection Commission
+and the Italian data protection authority issued a joint statement. They pointed out that
+a phone or a camera is visible when it records, whereas these glasses have only a very
+small indicator light, and that neither Facebook nor Ray-Ban had shown that the light
+works as a warning in real conditions. They asked the company to demonstrate that the
+light was effective and to run a public information campaign about the product
+\cite{dpc2021view}.
+
+Later events showed why regulators doubted the light. In October 2024, two Harvard
+students connected a pair of Ray-Ban Meta glasses to a public face search engine and a
+language model, and demonstrated a system that could look at a stranger, find their name
+and then search the web for details such as their home address, phone number and
+relatives \cite{cox2024ixray}. They did not release the code, and said that their aim was
+to show how easily existing products could be combined in this way. In early 2026, a BBC
+investigation reported hundreds of videos on social media in which men had approached
+women in public and filmed them with smart glasses, and then posted the footage as dating
+advice. The women interviewed said they had not noticed any light showing that they were
+being recorded, several found the videos only after they had been posted and had received
+abusive comments, and in one case the person who posted a video asked the woman to pay
+for it to be removed \cite{bbc2026glasses}. In May 2026, the Attorney General of Texas
+opened an investigation into Meta's camera glasses, stating that the recording light is
+easily hidden, that it is not active when the glasses are in a mode that keeps them
+processing video for the assistant, and that the devices could collect biometric data and
+record people without their knowledge or consent \cite{cbs2026texas}.
+
+Research with bystanders points the same way. In a field study, Denning et al.\ wore a
+mock augmented-reality device in cafes over 12 sessions and interviewed 31 people who had
+been near it; bystanders were uneasy about being recorded, and their reactions depended on
+what was being captured and why \cite{denning2014}. Surveys report that between 65\% and
+90\% of bystanders would take defensive action in sensitive settings \cite{mindthegap2026},
+and that the protection people expect depends strongly on context \cite{ohagan2023}.
+Wearers feel the tension too. In interviews by Bhardwaj et al., people who use camera
+glasses every day said they felt responsible for the people around them, but found the
+existing privacy indicators ineffective and had no good tool to protect others
+\cite{bhardwaj2024}.
+
+\subsection{The Legal Position and the Right to Complain}
+\label{sec:legal}
+
+Bystanders are not only uncomfortable; in many places they also have legal rights over
+recordings of themselves. Under the European Union's General Data Protection Regulation,
+an image from which a person can be identified is personal data, and a person who
+believes their data has been processed unlawfully has the right to lodge a complaint with
+a data protection authority \cite{gdpr2016}. The regulation does not apply to purely
+personal or household activity, but the Court of Justice of the European Union has read
+that exemption narrowly. In the \emph{Ryne\v{s}} case, it held that a private camera
+which records a public space, even partly, is not purely personal and falls within data
+protection law \cite{rynes2014}. A camera worn on the face records public spaces almost
+by definition. Sri Lanka's Personal Data Protection Act, No.~9 of 2022, likewise
+provides for a Data Protection Authority whose powers include receiving complaints and
+conducting inquiries \cite{srilanka_pdpa2022}.
+
+In practice, therefore, a person filmed by a stranger's camera glasses may be able to
+complain to a regulator or ask for the footage to be removed, and the cases above show
+that people do complain, to journalists, to platforms, to the police and to regulators.
+The question this raises for wearers and manufacturers is not whether bystander privacy
+matters, but how a device can respect it without becoming useless to the person wearing
+it.
+
+\subsection{The Need for Selective Anonymization}
+\label{sec:need}
+
+The people who appear in a wearer's video fall into two very different groups. Some are
+\emph{interaction partners}: the friend across the table, the shopkeeper the wearer is
+paying, the colleague in the meeting. They know they are with the wearer, they can see the
+glasses, and they are part of the moment being recorded. Others are \emph{bystanders}:
+strangers walking past, people at the next table, a crowd in a market. They have no
+relationship with the wearer and no practical way to object.
+
+The two groups need opposite treatment. A recording of a dinner with friends is only
+worth keeping if the friends are visible, and an assistant that is meant to help the
+wearer in a conversation has to see the person they are talking to. The strangers at the
+next table, on the other hand, gain nothing from appearing in the video and are exposed to
+every risk described above: being identified, being posted online, and being searched for
+later. A protection that treats every face the same way either fails the bystanders or
+fails the wearer.
+
+The need also grows with adoption. With millions of camera glasses sold each year
+\cite{uploadvr2026sales}, the number of people recorded without consent grows with them,
+and a protection that relies on bystanders noticing a light, or on them carrying a device
+of their own, will not scale. What is needed is protection that the glasses apply
+automatically, that treats strangers and companions differently, and that does not itself
+create a new privacy risk such as a database of recognised faces or a stream of video sent
+to a server.
+
+\subsection{Why Existing Protections Fall Short}
+\label{sec:existing}
+
+\paragraph{The recording light.}
+The protection built into today's products is a small light that turns on while the
+camera records. It asks bystanders to notice a tiny light, often in daylight, to know
+what it means, and then to act on it. The regulators' statement \cite{dpc2021view}, the
+accounts collected by the BBC \cite{bbc2026glasses} and the Texas investigation
+\cite{cbs2026texas} all report the same weaknesses: the light is hard to see, it can be
+covered, and it does not cover every mode in which the camera is used. Even when it
+works, it only tells a bystander that recording is happening; it does nothing to protect
+them in the recording.
+
+\paragraph{Blurring every face.}
+The second approach is to blur every face, as Google Street View does and as Meta's
+EgoBlur tool does for recordings from its research glasses \cite{egoblur2023}. On-device
+systems such as SafeAR apply the same idea inside the headset \cite{safear2025}. Blanket
+blurring protects bystanders, but it also blurs the friend the wearer is talking to. For a
+device whose purpose is to capture and assist social life, a recording in which every
+companion is blurred has lost most of its value, and wearers have little reason to keep
+such a protection switched on.
+
+\paragraph{Selective systems that need extra hardware.}
+Research systems have tried to be selective. BystandAR \cite{bystandar} separates
+partners from bystanders using the wearer's eye gaze and a directional microphone array,
+and BystandARIA \cite{bystandaria} lets bystanders request blurring with a light-emitting
+device they carry. Both show that selective protection is possible, but both depend on
+hardware that ordinary camera glasses, or ordinary bystanders, do not have. Eye tracking
+and microphone arrays add cost, weight and battery drain, and a scheme that only protects
+people who carry a special device protects almost nobody in a real street.
+
+\paragraph{Recognising known people.}
+A further option would be to recognise the wearer's friends and blur everyone else. This
+needs a database of known faces, which is itself sensitive biometric data, and it is
+exactly the kind of capability that regulators and the public object to most strongly
+\cite{cox2024ixray,cbs2026texas}. Sending the video to a server for processing has the
+same problem, since it moves the very faces that should be protected off the device.
+
+\subsection{Problem Statement}
+\label{sec:problem}
+
+Putting these points together, I arrive at the problem in four steps.
+
+\paragraph{Step 1: what is used today.}
+Camera glasses rely on a recording light, and recorded footage is protected, if at all,
+by blurring every face.
+
+\paragraph{Step 2: why that is not enough.}
+The light does not protect bystanders in the recording, and blanket blurring removes the
+people the wearer is with, so it defeats the purpose of the device. Blurring every face
+continuously also costs computation and battery on a device that has little of either.
+
+\paragraph{Step 3: what others have tried.}
+Selective systems separate partners from bystanders, but only with eye tracking,
+microphone arrays or devices carried by bystanders, none of which ordinary camera glasses
+or ordinary bystanders have.
+
+\paragraph{Step 4: what is missing.}
+No published method separates partners from bystanders using only the RGB camera that
+every pair of camera glasses already has. Doing so is hard for three reasons. It must not
+recognise anyone, because a database of known faces is itself a privacy risk. It cannot
+use extra sensors. And it must be light enough for the small processors and batteries of
+wearable devices, since sending the video elsewhere would expose the very faces it is
+meant to protect.
+
+\begin{center}
+\fbox{\begin{minipage}{0.9\linewidth}
+\textbf{Problem statement.} Camera glasses lack a way to decide, from their single RGB
+camera and without recognising anyone, which people in the video are interacting with
+the wearer, so that only bystanders are anonymized, using computation that is realistic
+for wearable hardware.
+\end{minipage}}
+\end{center}
+
+\subsection{Importance of This Research}
+\label{sec:importance}
+
+Solving this problem matters to several groups at once. For \textbf{bystanders}, it means
+that a stranger's face is blurred before the footage is stored, shared or searched, so the
+risks described in Section~\ref{sec:concern} are reduced at the source rather than after a
+complaint. For \textbf{wearers}, it means they can record and use an assistant in social
+situations without exposing the people around them, and without the recording losing the
+friends who made the moment worth keeping. For \textbf{manufacturers}, it offers a
+protection that works with the camera already in the glasses, that does not need a face
+database, and that keeps the video on the device, which is what regulators have asked for.
+And for \textbf{society}, it is a step towards wearable cameras whose default behaviour
+respects people who never agreed to be recorded, in line with the idea of privacy by
+design \cite{cavoukian2009pbd}.
+
+The research is also timely. The devices are already sold in millions, the complaints and
+investigations described above happened within the last two years, and the processors in
+current glasses already include hardware for running small neural networks
+\cite{qcom_ar1}. A method that
+fits within that hardware could be deployed as a software update rather than waiting for a
+new generation of devices.
+
+\subsection{Research Aim}
+
+The aim of this research is to design, implement and evaluate a privacy pipeline that
+blurs the faces of bystanders in first-person video while leaving the faces of the
+wearer's interaction partners visible, using only a single RGB camera, without face
+recognition, and with computation suitable for wearable-class hardware.
+
+\subsection{Research Questions}
+\label{sec:rq}
+
+\begin{description}
+  \item[RQ1.] Can a small set of visual cues taken from a single RGB camera (how large a
+        face is, where it is in the frame, which way the head is turned, and whether the
+        mouth is moving) separate a wearer's interaction partners from bystanders without
+        recognising anyone's identity?
+  \item[RQ2.] How well does selective anonymization based on these cues protect bystanders
+        and keep interaction partners visible, compared with blurring every face?
+  \item[RQ3.] How much computation does the pipeline need, and is it feasible on the CPU of
+        wearable-class hardware?
+\end{description}
+
+\subsection{Research Objectives}
+
+\begin{enumerate}
+  \item Build a face detection and tracking pipeline that keeps a stable, anonymous
+        identity for each face in first-person video without storing any biometric data.
+  \item Design interaction cues from face geometry, head pose and mouth movement, and a
+        decision rule that combines them into a partner or bystander label for each face.
+  \item Apply blurring only to faces labelled as bystanders, and produce a blanket-blurred
+        version of the same video as a baseline.
+  \item Assemble a dataset of first-person video and evaluate the system against human
+        judgements, measuring bystander protection and partner preservation separately,
+        and measuring how much each cue contributes.
+  \item Measure the processing time and power draw of the pipeline and estimate the
+        performance on a Raspberry Pi~5 and on current camera-glasses hardware.
+\end{enumerate}
+
+Table~\ref{tab:rq_map} shows which objectives and which parts of the thesis answer each
+research question.
+
+\begin{table}[htbp]
+\begin{singlespace}
+\centering
+\caption{How the research questions map to objectives and to the thesis.}
+\label{tab:rq_map}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Question} & \textbf{Objectives} & \textbf{Answered in} \\
+\midrule
+RQ1 (cues)        & 1, 2, 4 & Sections~\ref{sec:res_ablation}, \ref{sec:res_errors}, \ref{sec:disc_cues} \\
+RQ2 (accuracy)    & 3, 4    & Sections~\ref{sec:res_2a} to \ref{sec:res_baseline}, \ref{sec:disc_tradeoff} \\
+RQ3 (computation) & 5       & Sections~\ref{sec:res_speed}, \ref{sec:disc_hw} \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\subsection{Scope}
+
+I work only with the visual channel. The system does not use audio, depth sensing or eye
+tracking, because most consumer glasses do not expose them to third-party software. The
+decision rule is a hand-designed heuristic rather than a trained model, since no labelled
+dataset of partners and bystanders existed when I started. I evaluate on recorded
+first-person video from the Ego4D dataset and from YouTube rather than footage recorded
+for this study. Processing speed and power are measured on a laptop CPU and projected to
+the Raspberry Pi~5 and to camera-glasses hardware, which I did not have access to. The
+thesis is about technical protection; it does not give legal advice, and the legal
+position in Section~\ref{sec:legal} is described only to show why the problem matters.
+
+\subsection{Contributions}
+
+\begin{itemize}
+  \item A selective anonymization pipeline that separates interaction partners from
+        bystanders using only face geometry, head pose and mouth movement from one RGB
+        camera, with no face recognition and no stored identity.
+  \item An offline second pass for recorded video that decides once per person, keeping
+        confirmed partners, and the people who stay with them, visible for their whole time
+        on screen, and rejoining people who briefly leave the view without recognising them.
+  \item An evaluation protocol for this task: blind labelling of short video clips with
+        sound by several annotators, agreement statistics, separate privacy and utility
+        measures with confidence intervals, a check of every system decision against the
+        rendered output, and an ablation that measures each cue on the same labels.
+  \item A breakdown of where processing time and power are spent, with projections to a
+        Raspberry Pi~5 and to current camera-glasses hardware.
+\end{itemize}
+
+\subsection{Thesis Structure}
+
+The rest of the thesis is organised as follows.
+
+\textbf{Chapter~\ref{sec:lit}, Literature Review,} first gives the background the work
+builds on: bystander privacy and how it has been studied, first-person vision, face
+detection, object tracking, facial landmarks and the hardware of edge devices and camera
+glasses. It then reviews the systems closest to mine, from blanket blurring to selective
+systems that use gaze, audio or devices carried by bystanders, and ends by stating the
+research gap that this thesis addresses.
+
+\textbf{Chapter~\ref{sec:method}, Methodology,} describes the research design, the
+dataset and the tools, and the theory behind each stage of the pipeline. It then explains
+the design of the pipeline stage by stage, the decision rule and its thresholds, the
+offline second pass for recorded video, and the evaluation: the three labelled sets, the
+measures of bystander protection and partner preservation, the agreement and interval
+statistics, and the speed, power and projection methods.
+
+\textbf{Chapter~\ref{sec:results}, Results and Discussion,} reports the agreement between
+annotators, the accuracy of both versions of the system on each labelled set, the
+contribution of each cue, the effect of the area threshold, an analysis of the errors,
+the offline second pass, the improvements tested afterwards, the robustness of the
+results, and the processing time, power draw and hardware projections. It then discusses
+what the results mean, compares them with prior work and with real camera-glasses
+hardware, and sets out the limitations of the study.
+
+\textbf{Chapter~\ref{sec:conclusion}, Conclusion,} answers the three research questions,
+summarises the contributions and outlines future work.

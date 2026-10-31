@@ -1,0 +1,9 @@
+variant,detect_ms,track_ms,read_ms,landmarks_ms,fps_2a,fps_2b,face_recall,small_face_recall,extra_detections,skipped_frame_coverage
+"PyTorch, 640",46.9,0.27,8.7,14.7,17.6,14.0,100.0,100.0,0,
+"ONNX Runtime, 640",52.0,0.27,9.1,17.0,15.5,11.7,99.7,99.7,6,
+"OpenVINO, 640",21.2,0.29,9.2,14.4,31.1,22.4,99.7,99.7,9,
+"OpenVINO, 416",12.3,0.25,8.6,14.1,44.8,27.4,64.3,59.5,12,
+"OpenVINO, 320",10.0,0.24,8.7,14.0,47.9,29.5,50.3,44.1,8,
+"OpenVINO, 640, every 2nd",10.5,0.14,8.7,7.1,49.3,36.6,99.7,99.7,9,97.9
+"OpenVINO, 640, every 3rd",6.9,0.11,8.7,4.6,58.8,47.7,99.7,99.7,9,93.1
+"OpenVINO, 416, every 2nd",6.3,0.12,8.6,7.0,62.2,42.4,64.3,59.5,12,55.8

@@ -10,7 +10,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import (
     BOX_COLOR, BOX_THICKNESS,
-    LABEL_COLOR, LABEL_FONT_SCALE, LABEL_THICKNESS
+    LABEL_COLOR, LABEL_FONT_SCALE, LABEL_THICKNESS,
+    COLOR_INTERACTING, COLOR_BYSTANDER,
 )
 
 # Palette: 20 distinct colors so each Face ID gets its own color
@@ -103,4 +104,72 @@ class Visualizer:
             cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA
         )
 
+        return canvas
+
+    # ── Phase 2: decision-layer overlay ──────────────────────────────────────
+    def draw_decisions(
+        self,
+        frame: np.ndarray,
+        decided_tracks: list[dict],
+    ) -> np.ndarray:
+        """
+        Draw the interaction decision for each face: a GREEN box for preserved
+        interaction partners, a RED box for bystanders, plus the cue values.
+
+        Parameters
+        ----------
+        frame          : BGR frame
+        decided_tracks : output of InteractionClassifier.classify()
+
+        Returns
+        -------
+        Annotated copy (original is not modified).
+        """
+        canvas = frame.copy()
+        n_interact = 0
+
+        for t in decided_tracks:
+            tid            = t["track_id"]
+            x1, y1, x2, y2 = t["bbox"]
+            interacting    = t.get("interacting", False)
+            cues           = t.get("cues", {})
+
+            color = COLOR_INTERACTING if interacting else COLOR_BYSTANDER
+            n_interact += int(interacting)
+
+            cv2.rectangle(canvas, (x1, y1), (x2, y2), color, BOX_THICKNESS)
+
+            tag = "PARTNER" if interacting else "BYSTANDER"
+            label = (
+                f"ID:{tid} {tag} "
+                f"a={cues.get('area_ratio', 0):.3f} "
+                f"d={cues.get('center_dist', 0):.2f}"
+            )
+
+            (tw, th), baseline = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, LABEL_FONT_SCALE, LABEL_THICKNESS
+            )
+            label_y = max(y1, th + 6)
+            cv2.rectangle(
+                canvas,
+                (x1, label_y - th - 6),
+                (x1 + tw + 4, label_y + baseline - 4),
+                color, cv2.FILLED,
+            )
+            cv2.putText(
+                canvas, label, (x1 + 2, label_y - 4),
+                cv2.FONT_HERSHEY_SIMPLEX, LABEL_FONT_SCALE,
+                (255, 255, 255), LABEL_THICKNESS, cv2.LINE_AA,
+            )
+
+        # ── HUD ──────────────────────────────────────────────────────────────
+        hud = (
+            f"Faces: {len(decided_tracks)} | "
+            f"Partners: {n_interact} | "
+            f"Bystanders: {len(decided_tracks) - n_interact}"
+        )
+        cv2.putText(
+            canvas, hud, (10, 28),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA
+        )
         return canvas
