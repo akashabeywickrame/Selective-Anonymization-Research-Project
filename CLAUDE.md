@@ -179,11 +179,12 @@ Runs on Windows and CPU (`DEVICE = "cpu"`). Pass `encoding="utf-8", errors="repl
 
 ## Annotator anonymisation (2026-10-30, owner)
 
-Annotator files use letters, not names: Set C A-E (A = owner), Set B A, D, F, G (D is the
+Annotator files use letters, not names: Set C A-E, Set B A, D, F, G (D is the
 same person in both studies). Commands:
 `python eval/aggregate_clip_annotations.py eval/clip_package/annotations_{A,B,C,D,E}.csv`
 `python eval/aggregate_annotations.py eval/annotation_package/annotations_{A,D,F,G}.csv --min-annotators 2`
 Never write annotators' real names into the repo. Older commits still contain the names.
+**Owner (2026-10-31): the owner did NOT annotate; five friends labelled the clips. Never write in the thesis that the owner was an annotator (no "myself", "A is me", "removing my labels"). Set A is described as labelled by one annotator.**
 
 ## Rules for working on this project
 

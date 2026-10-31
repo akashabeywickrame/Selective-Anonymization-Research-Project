@@ -33,7 +33,7 @@ import replay_classifier as R
 from whole_video import decide
 from config import LOGS_DIR
 
-ANNOTATORS = ["A", "B", "C", "D", "E"]   # A = myself; files are anonymised
+ANNOTATORS = ["A", "B", "C", "D", "E"]   # files are anonymised (letters only)
 EXCLUDED = {"clip_067", "clip_071"}   # false detections (magazine cover, package)
 rows = []
 
